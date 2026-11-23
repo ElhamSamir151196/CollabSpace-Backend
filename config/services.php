@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // Sign in with Google (Socialite). The React app sends us a Google access token.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];

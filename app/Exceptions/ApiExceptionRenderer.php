@@ -26,6 +26,11 @@ class ApiExceptionRenderer
         }
 
         return match (true) {
+            $e instanceof BusinessException => ApiResponse::error(
+                $e->getMessage(),
+                $e->status(),
+            ),
+
             $e instanceof ValidationException => ApiResponse::error(
                 __('The given data was invalid.'),
                 422,

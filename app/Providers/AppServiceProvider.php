@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -28,7 +30,21 @@ class AppServiceProvider extends ServiceProvider
         $this->configureModels();
         $this->configureResources();
         $this->configurePasswords();
+        $this->configurePasswordResetUrl();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * The reset email links to the React app, not to a Laravel page.
+     */
+    private function configurePasswordResetUrl(): void
+    {
+        ResetPassword::createUrlUsing(function (User $user, string $token): string {
+            return config('collabspace.frontend_url').'/reset-password?'.http_build_query([
+                'token' => $token,
+                'email' => $user->email,
+            ]);
+        });
     }
 
     /**

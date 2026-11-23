@@ -2,24 +2,42 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            AdminUserSeeder::class,
         ]);
+
+        if (app()->isLocal()) {
+            $this->seedDemoUsers();
+        }
+    }
+
+    /**
+     * Demo accounts for local development only (password: "password").
+     */
+    private function seedDemoUsers(): void
+    {
+        User::query()->firstOrCreate(
+            ['email' => 'pm@collabspace.test'],
+            User::factory()->raw(['name' => 'Mohamed Salah', 'job_title' => 'Project Manager']),
+        )->syncRoles([UserRole::ProjectManager->value]);
+
+        foreach (range(1, 5) as $i) {
+            User::query()->firstOrCreate(
+                ['email' => "member{$i}@collabspace.test"],
+                User::factory()->raw(),
+            )->syncRoles([UserRole::TeamMember->value]);
+        }
     }
 }

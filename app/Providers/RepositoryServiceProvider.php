@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Interfaces\Repositories\UserRepositoryInterface;
+use App\Repositories\Eloquent\UserRepository;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -17,6 +19,6 @@ class RepositoryServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     public array $bindings = [
-        // \App\Interfaces\Repositories\ProjectRepositoryInterface::class => \App\Repositories\Eloquent\ProjectRepository::class,
+        UserRepositoryInterface::class => UserRepository::class,
     ];
 }

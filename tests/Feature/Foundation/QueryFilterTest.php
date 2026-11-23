@@ -3,9 +3,6 @@
 use App\Filters\QueryFilter;
 use App\Models\User;
 use App\Repositories\Eloquent\BaseRepository;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 class TestUserFilter extends QueryFilter
 {

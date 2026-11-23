@@ -1,0 +1,35 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| CollabSpace application settings
+|--------------------------------------------------------------------------
+*/
+
+return [
+
+    // The React app. Used to build links sent by email (e.g. reset password).
+    'frontend_url' => rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/'),
+
+    'auth' => [
+        // Lifetime of an API token for a normal login.
+        'token_ttl_hours' => (int) env('AUTH_TOKEN_TTL_HOURS', 24),
+
+        // Lifetime when the user ticks "Remember me".
+        'remember_ttl_days' => (int) env('AUTH_REMEMBER_TTL_DAYS', 30),
+    ],
+
+    'avatars' => [
+        'disk' => 'public',
+        'directory' => 'avatars',
+        'max_kb' => 2048,
+    ],
+
+    // First admin account created by AdminUserSeeder.
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'System Admin'),
+        'email' => env('ADMIN_EMAIL'),
+        'password' => env('ADMIN_PASSWORD'),
+    ],
+
+];
