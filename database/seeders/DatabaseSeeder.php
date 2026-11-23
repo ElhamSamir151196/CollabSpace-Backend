@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Priority;
+use App\Enums\ProjectStatus;
 use App\Enums\UserRole;
+use App\Models\Project;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -22,6 +25,42 @@ class DatabaseSeeder extends Seeder
         if (app()->isLocal()) {
             $this->seedDemoUsers();
             $this->seedDemoTeams();
+            $this->seedDemoProjects();
+        }
+    }
+
+    /**
+     * "Alpha" and "SepetGo" from the Figma projects screen, managed by the demo PM.
+     */
+    private function seedDemoProjects(): void
+    {
+        $pm = User::query()->where('email', 'pm@collabspace.test')->first();
+
+        if ($pm === null) {
+            return;
+        }
+
+        $projects = [
+            ['name' => 'Alpha', 'slug' => 'alpha', 'type' => 'SaaS', 'priority' => Priority::High, 'teams' => ['UI/UX', 'Frontend', 'Backend', 'Marketing']],
+            ['name' => 'SepetGo', 'slug' => 'sepetgo', 'type' => 'Mobile App', 'priority' => Priority::Medium, 'teams' => ['UI/UX', 'Backend']],
+        ];
+
+        foreach ($projects as $data) {
+            $project = Project::query()->firstOrCreate(['slug' => $data['slug']], [
+                'name' => $data['name'],
+                'description' => 'This project focuses on organizing tasks, tracking progress, and coordinating team efforts.',
+                'type' => $data['type'],
+                'status' => ProjectStatus::InProgress,
+                'priority' => $data['priority'],
+                'start_date' => now()->subMonth()->toDateString(),
+                'deadline' => now()->addMonths(2)->toDateString(),
+                'manager_id' => $pm->id,
+                'created_by' => $pm->id,
+            ]);
+
+            $project->teams()->syncWithoutDetaching(
+                Team::query()->whereIn('name', $data['teams'])->pluck('id')->all(),
+            );
         }
     }
 

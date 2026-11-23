@@ -78,6 +78,14 @@ class Team extends Model
     }
 
     /**
+     * @return BelongsToMany<Project, $this>
+     */
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class)->withTimestamps();
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function creator(): BelongsTo
