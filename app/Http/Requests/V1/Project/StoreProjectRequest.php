@@ -5,6 +5,7 @@ namespace App\Http\Requests\V1\Project;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Http\Requests\Concerns\ValidatesProjectAssignments;
+use App\Http\Requests\Concerns\ValidatesUploadedFiles;
 use App\Models\Project;
 use App\Rules\EligibleProjectManager;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -13,11 +14,11 @@ use Illuminate\Validation\Rule;
 
 /**
  * New Project form: name, description, type, priority, status,
- * start date, deadline, teams and guests. Files come with the Files module.
+ * start date, deadline, teams, guests and files (multipart files[]).
  */
 class StoreProjectRequest extends FormRequest
 {
-    use ValidatesProjectAssignments;
+    use ValidatesProjectAssignments, ValidatesUploadedFiles;
 
     public function authorize(): bool
     {
@@ -44,6 +45,7 @@ class StoreProjectRequest extends FormRequest
             ],
             ...$this->teamIdsRules(required: false),
             ...$this->guestIdsRules(required: false),
+            ...$this->fileRules(required: false),
         ];
     }
 

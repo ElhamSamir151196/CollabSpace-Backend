@@ -2,6 +2,7 @@
 
 namespace App\Actions\Project;
 
+use App\Actions\Files\UploadAttachmentsAction;
 use App\DTOs\Project\CreateProjectData;
 use App\Enums\ProjectStatus;
 use App\Events\ProjectCreated;
@@ -20,6 +21,7 @@ class CreateProjectAction
     public function __construct(
         private readonly ProjectRepositoryInterface $projects,
         private readonly ProjectSlugGenerator $slugs,
+        private readonly UploadAttachmentsAction $uploadFiles,
     ) {}
 
     public function handle(CreateProjectData $data, User $creator): Project
@@ -41,6 +43,11 @@ class CreateProjectAction
 
             $this->projects->attachTeams($project, $data->teamIds);
             $this->projects->attachGuests($project, $data->guestIds, $creator);
+
+            // Inside the transaction: if a file fails, no half-created project is left.
+            if ($data->files !== []) {
+                $this->uploadFiles->handle($project, $data->files, $creator);
+            }
 
             return $project;
         });

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Priority;
 use App\Enums\TaskStatus;
 use App\Traits\Filterable;
+use App\Traits\HasAttachments;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -42,6 +43,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read User|null $reviewer
  * @property-read User|null $creator
  * @property-read Collection<int, User> $assignees
+ * @property int|null $attachments_count
  */
 #[Fillable([
     'project_id',
@@ -61,7 +63,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
-    use Filterable, HasFactory, LogsActivity, SoftDeletes;
+    use Filterable, HasAttachments, HasFactory, LogsActivity, SoftDeletes;
 
     /**
      * @var array<string, mixed>

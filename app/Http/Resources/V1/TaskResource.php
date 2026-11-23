@@ -45,6 +45,8 @@ class TaskResource extends JsonResource
             ]),
             'reviewer' => new UserSummaryResource($this->whenLoaded('reviewer')),
             'assignees' => UserSummaryResource::collection($this->whenLoaded('assignees')),
+            // The paperclip number on the card.
+            'attachments_count' => $this->whenCounted('attachments'),
             'created_by' => new UserSummaryResource($this->whenLoaded('creator')),
             'can' => $this->when($this->relationLoaded('project') && $user !== null, fn () => [
                 'update' => (bool) $user?->can('update', $this->resource),

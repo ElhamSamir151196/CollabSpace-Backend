@@ -25,6 +25,15 @@ return [
         'max_kb' => 2048,
     ],
 
+    // Project / task files. Stored on a PRIVATE disk (storage/app/private),
+    // downloaded only through signed links that expire.
+    'files' => [
+        'disk' => env('FILES_DISK', 'local'),
+        'max_kb' => (int) env('FILES_MAX_KB', 20480), // 20 MB per file
+        'max_per_upload' => 10,
+        'link_ttl_minutes' => 30,
+    ],
+
     // First admin account created by AdminUserSeeder.
     'admin' => [
         'name' => env('ADMIN_NAME', 'System Admin'),

@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Traits\Filterable;
+use App\Traits\HasAttachments;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -71,7 +72,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
-    use Filterable, HasFactory, LogsActivity, SoftDeletes;
+    use Filterable, HasAttachments, HasFactory, LogsActivity, SoftDeletes;
 
     /**
      * @var array<string, mixed>

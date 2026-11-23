@@ -31,7 +31,7 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
 
     public function paginateVisibleTo(User $user, QueryFilter $filter, int $perPage = 15): LengthAwarePaginator
     {
-        $query = $this->query()->visibleTo($user)->with(self::CARD_RELATIONS);
+        $query = $this->query()->visibleTo($user)->with(self::CARD_RELATIONS)->withCount('attachments');
 
         $filter->apply($query);
 
@@ -40,7 +40,7 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
 
     public function forBoard(Project $project, QueryFilter $filter): Collection
     {
-        $query = $this->query()->where('project_id', $project->id)->with(self::CARD_RELATIONS);
+        $query = $this->query()->where('project_id', $project->id)->with(self::CARD_RELATIONS)->withCount('attachments');
 
         $filter->apply($query);
 
@@ -98,6 +98,6 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
 
     public function loadDetails(Task $task): Task
     {
-        return $task->load([...self::CARD_RELATIONS, 'creator']);
+        return $task->load([...self::CARD_RELATIONS, 'creator'])->loadCount('attachments');
     }
 }

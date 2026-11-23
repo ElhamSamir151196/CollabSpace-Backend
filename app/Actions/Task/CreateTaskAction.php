@@ -2,6 +2,7 @@
 
 namespace App\Actions\Task;
 
+use App\Actions\Files\UploadAttachmentsAction;
 use App\DTOs\Task\CreateTaskData;
 use App\Enums\TaskStatus;
 use App\Events\TaskAssigned;
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\DB;
  */
 class CreateTaskAction
 {
-    public function __construct(private readonly TaskRepositoryInterface $tasks) {}
+    public function __construct(
+        private readonly TaskRepositoryInterface $tasks,
+        private readonly UploadAttachmentsAction $uploadFiles,
+    ) {}
 
     public function handle(Project $project, CreateTaskData $data, User $creator): Task
     {
@@ -40,6 +44,11 @@ class CreateTaskAction
             ]);
 
             $this->tasks->syncAssignees($task, $data->assigneeIds);
+
+            // Inside the transaction: if a file fails, no half-created task is left.
+            if ($data->files !== []) {
+                $this->uploadFiles->handle($task, $data->files, $creator);
+            }
 
             return $task;
         });

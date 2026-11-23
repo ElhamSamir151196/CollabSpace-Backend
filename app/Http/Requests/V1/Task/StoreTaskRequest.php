@@ -5,6 +5,7 @@ namespace App\Http\Requests\V1\Task;
 use App\Enums\Priority;
 use App\Enums\TaskStatus;
 use App\Http\Requests\Concerns\ValidatesTaskAssignees;
+use App\Http\Requests\Concerns\ValidatesUploadedFiles;
 use App\Models\Project;
 use App\Models\Task;
 use App\Rules\ProjectMember;
@@ -16,11 +17,11 @@ use Illuminate\Validation\Validator;
 
 /**
  * Create Task form: POST /projects/{project}/tasks.
- * Files are attached with the Files module.
+ * Files can be sent in the same request (multipart files[]).
  */
 class StoreTaskRequest extends FormRequest
 {
-    use ValidatesTaskAssignees;
+    use ValidatesTaskAssignees, ValidatesUploadedFiles;
 
     public function authorize(): bool
     {
@@ -42,6 +43,7 @@ class StoreTaskRequest extends FormRequest
             'due_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'reviewer_id' => ['nullable', 'integer', new ProjectMember($this->project())],
             ...$this->assigneeRules(),
+            ...$this->fileRules(required: false),
         ];
     }
 

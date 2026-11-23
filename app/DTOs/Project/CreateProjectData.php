@@ -6,12 +6,14 @@ use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Http\Requests\V1\Project\StoreProjectRequest;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 
 final readonly class CreateProjectData
 {
     /**
      * @param  list<int>  $teamIds
      * @param  list<int>  $guestIds
+     * @param  list<UploadedFile>  $files
      */
     public function __construct(
         public string $name,
@@ -24,6 +26,7 @@ final readonly class CreateProjectData
         public ?int $managerId = null,
         public array $teamIds = [],
         public array $guestIds = [],
+        public array $files = [],
     ) {}
 
     public static function fromRequest(StoreProjectRequest $request): self
@@ -39,6 +42,7 @@ final readonly class CreateProjectData
             managerId: $request->filled('manager_id') ? $request->integer('manager_id') : null,
             teamIds: self::ids($request->validated('team_ids', [])),
             guestIds: self::ids($request->validated('guest_ids', [])),
+            files: $request->uploadedFiles(),
         );
     }
 

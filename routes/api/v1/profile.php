@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Profile\ChangePasswordController;
 use App\Http\Controllers\Api\V1\Profile\DeleteAvatarController;
+use App\Http\Controllers\Api\V1\Profile\ListMyFilesController;
 use App\Http\Controllers\Api\V1\Profile\ProfileController;
 use App\Http\Controllers\Api\V1\Profile\UpdateAvatarController;
 use Illuminate\Support\Facades\Route;
@@ -22,4 +23,5 @@ Route::prefix('profile')->name('profile.')->middleware(['auth:sanctum', 'active'
     Route::post('avatar', UpdateAvatarController::class)->name('avatar.update');
     Route::delete('avatar', DeleteAvatarController::class)->name('avatar.destroy');
     Route::put('password', ChangePasswordController::class)->name('password.update');
+    Route::get('files', ListMyFilesController::class)->name('files');
 });
