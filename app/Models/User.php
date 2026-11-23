@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -39,6 +40,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, Role> $roles
+ * @property-read Collection<int, Team> $teams
+ * @property-read TeamMember $membership Pivot data when loaded through Team::members()
  */
 #[Fillable([
     'name',
@@ -103,6 +106,18 @@ class User extends Authenticatable
         $name = $this->roles->first()?->name;
 
         return $name !== null ? UserRole::tryFrom($name) : null;
+    }
+
+    /**
+     * @return BelongsToMany<Team, $this, TeamMember, 'membership'>
+     */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class)
+            ->using(TeamMember::class)
+            ->as('membership')
+            ->withPivot(['id', 'position', 'is_leader'])
+            ->withTimestamps();
     }
 
     public function hasPassword(): bool

@@ -1,6 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\Profile\ChangePasswordController;
+use App\Http\Controllers\Api\V1\Profile\DeleteAvatarController;
+use App\Http\Controllers\Api\V1\Profile\ProfileController;
+use App\Http\Controllers\Api\V1\Profile\UpdateAvatarController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,7 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('profile')->name('profile.')->middleware(['auth:sanctum', 'active'])->group(function () {
     Route::get('/', [ProfileController::class, 'show'])->name('show');
     Route::put('/', [ProfileController::class, 'update'])->name('update');
-    Route::post('avatar', [ProfileController::class, 'updateAvatar'])->name('avatar.update');
-    Route::delete('avatar', [ProfileController::class, 'destroyAvatar'])->name('avatar.destroy');
-    Route::put('password', [ProfileController::class, 'updatePassword'])->name('password.update');
+
+    Route::post('avatar', UpdateAvatarController::class)->name('avatar.update');
+    Route::delete('avatar', DeleteAvatarController::class)->name('avatar.destroy');
+    Route::put('password', ChangePasswordController::class)->name('password.update');
 });

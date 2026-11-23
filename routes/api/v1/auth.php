@@ -1,7 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Auth\AuthController;
-use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\Auth\ForgotPasswordController;
+use App\Http\Controllers\Api\V1\Auth\GoogleLoginController;
+use App\Http\Controllers\Api\V1\Auth\LoginController;
+use App\Http\Controllers\Api\V1\Auth\LogoutController;
+use App\Http\Controllers\Api\V1\Auth\MeController;
+use App\Http\Controllers\Api\V1\Auth\RegisterController;
+use App\Http\Controllers\Api\V1\Auth\ResetPasswordController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,16 +23,16 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->name('auth.')->group(function () {
 
     Route::middleware('throttle:auth')->group(function () {
-        Route::post('register', [AuthController::class, 'register'])->name('register');
-        Route::post('login', [AuthController::class, 'login'])->name('login');
-        Route::post('google', [AuthController::class, 'google'])->name('google');
-        Route::post('forgot-password', [PasswordResetController::class, 'forgot'])->name('password.forgot');
-        Route::post('reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
+        Route::post('register', RegisterController::class)->name('register');
+        Route::post('login', LoginController::class)->name('login');
+        Route::post('google', GoogleLoginController::class)->name('google');
+        Route::post('forgot-password', ForgotPasswordController::class)->name('password.forgot');
+        Route::post('reset-password', ResetPasswordController::class)->name('password.reset');
     });
 
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
-        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
-        Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::post('logout', LogoutController::class)->name('logout');
+        Route::get('me', MeController::class)->name('me');
     });
 
 });

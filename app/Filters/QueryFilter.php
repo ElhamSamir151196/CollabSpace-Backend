@@ -40,6 +40,14 @@ abstract class QueryFilter
      */
     protected array $sortable = ['created_at'];
 
+    /**
+     * Sortable values that are select aliases (e.g. "members_count" from withCount),
+     * not table columns — they must not be prefixed with the table name.
+     *
+     * @var list<string>
+     */
+    protected array $aliasSortable = [];
+
     /** Used when the request has no "sort". Prefix "-" means descending. */
     protected string $defaultSort = '-created_at';
 
@@ -109,7 +117,10 @@ abstract class QueryFilter
             $direction = str_starts_with($this->defaultSort, '-') ? 'desc' : 'asc';
         }
 
-        $this->builder->orderBy($this->builder->qualifyColumn($column), $direction);
+        $this->builder->orderBy(
+            in_array($column, $this->aliasSortable, true) ? $column : $this->builder->qualifyColumn($column),
+            $direction,
+        );
     }
 
     private function isFilterMethod(string $method): bool

@@ -1,32 +1,28 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Admin;
+namespace App\Http\Controllers\Api\V1\Admin\User;
 
-use App\Actions\Admin\ChangeUserRoleAction;
-use App\Actions\Admin\ChangeUserStatusAction;
 use App\Actions\Admin\CreateUserAction;
 use App\Actions\Admin\DeleteUserAction;
 use App\Actions\Admin\UpdateUserAction;
 use App\DTOs\Admin\CreateUserData;
 use App\DTOs\Admin\UpdateUserData;
-use App\Enums\UserRole;
 use App\Filters\UserFilter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Admin\User\IndexUsersRequest;
 use App\Http\Requests\V1\Admin\User\StoreUserRequest;
 use App\Http\Requests\V1\Admin\User\UpdateUserRequest;
-use App\Http\Requests\V1\Admin\User\UpdateUserRoleRequest;
-use App\Http\Requests\V1\Admin\User\UpdateUserStatusRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Interfaces\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use App\Support\ApiResponse;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Admin > Users. Every endpoint is protected by UserPolicy (users.manage).
+ * Admin > Users (CRUD). Role and status changes have their own invokable controllers.
+ * Every endpoint is protected by UserPolicy (users.manage).
  */
 class UserController extends Controller
 {
@@ -50,7 +46,7 @@ class UserController extends Controller
         return ApiResponse::created(new UserResource($user->load('roles')), __('User created successfully.'));
     }
 
-    public function show(Request $request, User $user): JsonResponse
+    public function show(User $user): JsonResponse
     {
         Gate::authorize('update', $user);
 
@@ -64,36 +60,12 @@ class UserController extends Controller
         return ApiResponse::success(new UserResource($user->load('roles')), __('User updated successfully.'));
     }
 
-    public function updateRole(UpdateUserRoleRequest $request, User $user, ChangeUserRoleAction $action): JsonResponse
-    {
-        $role = $request->enum('role', UserRole::class) ?? UserRole::TeamMember;
-
-        $user = $action->handle($this->actor($request), $user, $role);
-
-        return ApiResponse::success(new UserResource($user), __('Role updated successfully.'));
-    }
-
-    public function updateStatus(UpdateUserStatusRequest $request, User $user, ChangeUserStatusAction $action): JsonResponse
-    {
-        $user = $action->handle($this->actor($request), $user, $request->boolean('is_active'));
-
-        $message = $user->is_active ? __('User activated.') : __('User deactivated.');
-
-        return ApiResponse::success(new UserResource($user->load('roles')), $message);
-    }
-
-    public function destroy(Request $request, User $user, DeleteUserAction $action): JsonResponse
+    public function destroy(User $user, #[CurrentUser] User $actor, DeleteUserAction $action): JsonResponse
     {
         Gate::authorize('delete', $user);
 
-        $action->handle($this->actor($request), $user);
+        $action->handle($actor, $user);
 
         return ApiResponse::message(__('User deleted successfully.'));
-    }
-
-    private function actor(Request $request): User
-    {
-        /** @var User */
-        return $request->user();
     }
 }

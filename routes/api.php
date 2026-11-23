@@ -19,6 +19,7 @@ Route::prefix('v1')->name('v1.')->middleware('throttle:api')->group(function () 
     require __DIR__.'/api/v1/auth.php';
     require __DIR__.'/api/v1/profile.php';
     require __DIR__.'/api/v1/users.php';
+    require __DIR__.'/api/v1/teams.php';
 
     // Admin
     require __DIR__.'/api/v1/admin/users.php';
