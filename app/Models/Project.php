@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
@@ -43,6 +44,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property Carbon|null $deleted_at
  * @property int|null $teams_count
  * @property int|null $guests_count
+ * @property int|null $tasks_count
+ * @property int|null $completed_tasks_count
+ * @property int|null $pending_tasks_count
+ * @property int|null $in_progress_tasks_count
+ * @property int|null $in_review_tasks_count
+ * @property-read Collection<int, Task> $tasks
  * @property-read User $manager
  * @property-read User|null $creator
  * @property-read Collection<int, Team> $teams
@@ -132,6 +139,14 @@ class Project extends Model
     }
 
     /**
+     * @return HasMany<Task, $this>
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    /**
      * Projects the user may see: everything for admins (projects.manage-all),
      * otherwise only projects they manage, are a guest of, or whose team they are in.
      *
@@ -161,6 +176,17 @@ class Project extends Model
         return $this->isManagedBy($user)
             || $this->guests()->whereKey($user->id)->exists()
             || $this->teams()->whereHas('members', fn (Builder $members) => $members->whereKey($user->id))->exists();
+    }
+
+    /**
+     * % of completed tasks, from the tasks_count / completed_tasks_count
+     * aggregates (load them with withCount first). 0 when there are no tasks.
+     */
+    public function progressPercent(): int
+    {
+        $total = (int) $this->tasks_count;
+
+        return $total === 0 ? 0 : (int) round(((int) $this->completed_tasks_count / $total) * 100);
     }
 
     /**

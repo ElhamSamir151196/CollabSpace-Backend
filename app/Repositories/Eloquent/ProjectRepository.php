@@ -2,11 +2,13 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Enums\TaskStatus;
 use App\Filters\QueryFilter;
 use App\Interfaces\Repositories\ProjectRepositoryInterface;
 use App\Models\Project;
 use App\Models\Team;
 use App\Models\User;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,7 +28,7 @@ class ProjectRepository extends BaseRepository implements ProjectRepositoryInter
         $query = $this->query()
             ->visibleTo($user)
             ->with(['manager', 'teams' => fn ($teams) => $teams->withCount('members')])
-            ->withCount(['teams', 'guests']);
+            ->withCount(['teams', 'guests', ...$this->taskCounts(withEveryStatus: false)]);
 
         $filter->apply($query);
 
@@ -79,6 +81,25 @@ class ProjectRepository extends BaseRepository implements ProjectRepositoryInter
     {
         return $project
             ->load(['manager', 'creator', 'teams' => fn ($query) => $query->withCount('members'), 'guests'])
-            ->loadCount(['teams', 'guests']);
+            ->loadCount(['teams', 'guests', ...$this->taskCounts(withEveryStatus: true)]);
+    }
+
+    /**
+     * tasks_count + completed_tasks_count (for the progress %), and on the
+     * details screen also pending / in_progress / in_review counts.
+     *
+     * @return array<string, Closure>|array<int, string>
+     */
+    private function taskCounts(bool $withEveryStatus): array
+    {
+        $statuses = $withEveryStatus ? TaskStatus::cases() : [TaskStatus::Completed];
+
+        $counts = ['tasks'];
+
+        foreach ($statuses as $status) {
+            $counts["tasks as {$status->value}_tasks_count"] = fn (Builder $query) => $query->where('status', $status->value);
+        }
+
+        return $counts;
     }
 }

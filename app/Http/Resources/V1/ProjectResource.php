@@ -33,6 +33,17 @@ class ProjectResource extends JsonResource
             'start_date' => $this->start_date->toDateString(),
             'deadline' => $this->deadline->toDateString(),
             'is_overdue' => $this->isOverdue(),
+            // % of tasks completed (the "42% Completed" badge and the gauge).
+            'progress' => $this->whenCounted('tasks', fn () => $this->progressPercent()),
+            'tasks_count' => $this->whenCounted('tasks'),
+            // Only on the details screen (where every status count is loaded).
+            'task_stats' => $this->when(array_key_exists('pending_tasks_count', $this->resource->getAttributes()), fn () => [
+                'pending' => $this->pending_tasks_count,
+                'in_progress' => $this->in_progress_tasks_count,
+                'in_review' => $this->in_review_tasks_count,
+                'completed' => $this->completed_tasks_count,
+                'total' => $this->tasks_count,
+            ]),
             'completed_at' => $this->completed_at?->toIso8601String(),
             'manager' => new UserSummaryResource($this->whenLoaded('manager')),
             'teams' => $this->whenLoaded('teams', fn () => $this->teams->map(fn ($team) => [

@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
+use App\Enums\TaskStatus;
 use App\Enums\UserRole;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -26,6 +28,59 @@ class DatabaseSeeder extends Seeder
             $this->seedDemoUsers();
             $this->seedDemoTeams();
             $this->seedDemoProjects();
+            $this->seedDemoTasks();
+        }
+    }
+
+    /**
+     * The Kanban cards from the Figma "Tasks" screen, on the Alpha project.
+     */
+    private function seedDemoTasks(): void
+    {
+        $project = Project::query()->where('slug', 'alpha')->first();
+        $team = Team::query()->where('name', 'UI/UX')->first();
+
+        if ($project === null || $team === null) {
+            return;
+        }
+
+        $members = $team->members()->pluck('users.id')->all();
+
+        $cards = [
+            ['Create Wireframes', TaskStatus::Pending, Priority::High, 0],
+            ['User Research Analysis', TaskStatus::Pending, Priority::Medium, 0],
+            ['Design System Updates', TaskStatus::Pending, Priority::Low, 0],
+            ['Chat Screen Prototyping', TaskStatus::InProgress, Priority::High, 62],
+            ['Create Miro Interaction', TaskStatus::InProgress, Priority::Low, 32],
+            ['Mobile Responsiveness', TaskStatus::InReview, Priority::High, 100],
+            ['Accessibility Audit', TaskStatus::InReview, Priority::Low, 100],
+            ['Login Screen', TaskStatus::Completed, Priority::High, 100],
+            ['Survey', TaskStatus::Completed, Priority::Low, 100],
+        ];
+
+        $positions = [];
+
+        foreach ($cards as [$title, $status, $priority, $progress]) {
+            $position = $positions[$status->value] = ($positions[$status->value] ?? -1) + 1;
+
+            $task = Task::query()->firstOrCreate(
+                ['project_id' => $project->id, 'title' => $title],
+                [
+                    'team_id' => $team->id,
+                    'description' => 'Initial layout and structure for main page',
+                    'status' => $status,
+                    'priority' => $priority,
+                    'progress' => $progress,
+                    'position' => $position,
+                    'start_date' => now()->subWeek()->toDateString(),
+                    'due_date' => now()->addWeeks(2)->toDateString(),
+                    'reviewer_id' => $project->manager_id,
+                    'completed_at' => $status === TaskStatus::Completed ? now() : null,
+                    'created_by' => $project->manager_id,
+                ],
+            );
+
+            $task->assignees()->syncWithoutDetaching($members);
         }
     }
 

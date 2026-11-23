@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\Project;
+use App\Models\Team;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +35,23 @@ pest()->extend(TestCase::class)
  *
  * @param  array<string, mixed>  $attributes
  */
+/**
+ * A project managed by $manager (a new PM when null) with one team of $members users.
+ *
+ * @return array{0: Project, 1: Team, 2: list<User>}
+ */
+function projectWithTeam(?User $manager = null, int $members = 2): array
+{
+    $manager ??= User::factory()->projectManager()->create();
+    $team = Team::factory()->create();
+    $users = User::factory()->count($members)->create()->all();
+    $team->members()->attach(array_map(fn (User $user) => $user->id, $users));
+
+    $project = Project::factory()->managedBy($manager)->withTeams([$team])->create();
+
+    return [$project, $team, $users];
+}
+
 function actingAsRole(UserRole $role, array $attributes = []): User
 {
     $user = User::factory()->withRole($role)->create($attributes);
