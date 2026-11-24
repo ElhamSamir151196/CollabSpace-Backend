@@ -34,6 +34,13 @@ return [
         'link_ttl_minutes' => 30,
     ],
 
+    // Meeting cover images are public (like avatars), under random names.
+    'meetings' => [
+        'cover_disk' => 'public',
+        'cover_directory' => 'meeting-covers',
+        'cover_max_kb' => 4096,
+    ],
+
     // First admin account created by AdminUserSeeder.
     'admin' => [
         'name' => env('ADMIN_NAME', 'System Admin'),

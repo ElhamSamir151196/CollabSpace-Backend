@@ -25,11 +25,16 @@ final readonly class TeamMemberData
     }
 
     /**
-     * @param  list<array{user_id: int|string, position?: string|null, is_leader?: bool|int|string|null}>  $rows
+     * validated() can return the rows with keys out of order (0, 2, 1),
+     * so they are sorted back into the order they were sent.
+     *
+     * @param  array<int, array{user_id: int|string, position?: string|null, is_leader?: bool|int|string|null}>  $rows
      * @return list<self>
      */
     public static function collect(array $rows): array
     {
-        return array_map(self::fromArray(...), $rows);
+        ksort($rows);
+
+        return array_values(array_map(self::fromArray(...), $rows));
     }
 }

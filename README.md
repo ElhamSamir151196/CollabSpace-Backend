@@ -18,7 +18,7 @@ The frontend is a separate React app; this repository is the API only.
 | 4 | Tasks & Kanban board (drag & drop, progress, review flow) | Done |
 | 5 | Files (project / task uploads, signed downloads) | Done |
 | 6 | Real-time chat (direct + project / team channels, Reverb) | Done |
-| 7 | Meetings (calendar, transcripts, notes, AI summary) | Planned |
+| 7 | Meetings (calendar, participants, transcript, notes & comments) | Done |
 | 8 | Notifications & global search | Planned |
 | 9 | Dashboard, reports & PDF export | Planned |
 | 10 | AI assistant (provider-agnostic, Gemini first) | Planned |
@@ -89,6 +89,7 @@ php artisan chat:sync-channels
 
 | Variable | Purpose |
 |---|---|
+| `APP_TIMEZONE` | Timezone used to read meeting dates / times (e.g. `Africa/Cairo`) |
 | `FRONTEND_URL` | React app URL, used in emailed links (password reset) |
 | `AUTH_TOKEN_TTL_HOURS` | Token lifetime for a normal login (default 24) |
 | `AUTH_REMEMBER_TTL_DAYS` | Token lifetime with "Remember me" (default 30) |
@@ -110,7 +111,7 @@ php artisan chat:sync-channels
 
 Plus the teams *UI/UX, Frontend, Backend, Marketing*, the projects *Alpha* and *SepetGo*,
 the Kanban cards from the design on *Alpha*, the project / team chat channels, a few
-channel messages and a direct chat. The seeder is safe to run more than once.
+channel messages, a direct chat, and this week's meetings on *Alpha* (with a transcript and notes). The seeder is safe to run more than once.
 
 ---
 
@@ -172,7 +173,7 @@ app/
 └── Traits/             Filterable, HasAttachments
 routes/
 ├── api.php             requires the feature files below
-├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, admin/users
+├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, admin/users
 └── channels.php        real-time channel authorization
 ```
 
@@ -328,6 +329,35 @@ Who can open a chat:
 | Team ("&lt;Team&gt; Team Channel") | Members of that team while it is assigned to the project, the project manager, and admins |
 
 Project channels are created automatically with the project and whenever a team is assigned.
+</details>
+
+<details>
+<summary><b>Meetings</b> — <code>/meetings</code></summary>
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/meetings` | Calendar: `from`, `to` (default: this week), `project_id`, `mine`, `status`, `search`; dashboard: `upcoming=1&mine=1&limit=3` |
+| POST | `/meetings` | `{ project_id, title, description?, date, start_time, end_time \| duration_minutes, meeting_link?, participant_ids[]?, cover? }` |
+| GET / PATCH / DELETE | `/meetings/{meeting}` | PATCH edits title / description / link only |
+| PATCH | `/meetings/{meeting}/reschedule` | `{ date, start_time, end_time \| duration_minutes }` |
+| PATCH | `/meetings/{meeting}/cancel` | Stays on the calendar as cancelled |
+| PATCH | `/meetings/{meeting}/attendance` | `{ status: accepted \| declined }` |
+| POST | `/meetings/{meeting}/join` | From 15 min before the start to the end; records attendance, returns `meeting_link` |
+| POST / DELETE | `/meetings/{meeting}/cover` | Cover image (organizer) |
+| GET / POST / DELETE | `/meetings/{meeting}/participants` | Invite project members from any team |
+| GET / POST / PATCH / DELETE | `/meetings/{meeting}/transcripts` | Bulk lines `{ entries: [{ speaker_id \| speaker_name, offset: "00:40", content, language? }] }`; `?search=&language=` |
+| GET / POST / PATCH / DELETE | `/meetings/{meeting}/notes` | `type: note \| comment` |
+
+| Who | Can |
+|---|---|
+| Project manager / admin | Schedule, edit, reschedule, cancel, delete, manage participants |
+| Meeting organizer | Transcript and cover image |
+| Participants (and managers) | Answer, join, write notes and comments (edit their own) |
+| Other project members | See the meeting, its transcript and notes |
+
+Each meeting has a computed `state`: `upcoming`, `live`, `ended` or `cancelled`.
+The video call happens outside the app (`meeting_link`); clicking the cover opens it.
+The AI summary is part of the AI module (phase 10).
 </details>
 
 <details>

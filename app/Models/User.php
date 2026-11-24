@@ -43,6 +43,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Team> $teams
  * @property-read TeamMember $membership Pivot data when loaded through Team::members()
+ * @property-read MeetingParticipant $attendance Pivot data when loaded through Meeting::participants()
  */
 #[Fillable([
     'name',

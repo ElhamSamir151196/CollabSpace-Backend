@@ -65,7 +65,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Meeting dates / times sent by the frontend are read in this timezone
+    // (e.g. APP_TIMEZONE=Africa/Cairo). API responses include the offset.
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------

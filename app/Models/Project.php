@@ -148,6 +148,14 @@ class Project extends Model
     }
 
     /**
+     * @return HasMany<Meeting, $this>
+     */
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(Meeting::class);
+    }
+
+    /**
      * Projects the user may see: everything for admins (projects.manage-all),
      * otherwise only projects they manage, are a guest of, or whose team they are in.
      *

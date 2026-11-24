@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Interfaces\Repositories\AttachmentRepositoryInterface;
 use App\Interfaces\Repositories\ConversationRepositoryInterface;
+use App\Interfaces\Repositories\MeetingRepositoryInterface;
 use App\Interfaces\Repositories\MessageRepositoryInterface;
 use App\Interfaces\Repositories\ProjectRepositoryInterface;
 use App\Interfaces\Repositories\TaskRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Interfaces\Repositories\TeamRepositoryInterface;
 use App\Interfaces\Repositories\UserRepositoryInterface;
 use App\Repositories\Eloquent\AttachmentRepository;
 use App\Repositories\Eloquent\ConversationRepository;
+use App\Repositories\Eloquent\MeetingRepository;
 use App\Repositories\Eloquent\MessageRepository;
 use App\Repositories\Eloquent\ProjectRepository;
 use App\Repositories\Eloquent\TaskRepository;
@@ -38,5 +40,6 @@ class RepositoryServiceProvider extends ServiceProvider
         AttachmentRepositoryInterface::class => AttachmentRepository::class,
         ConversationRepositoryInterface::class => ConversationRepository::class,
         MessageRepositoryInterface::class => MessageRepository::class,
+        MeetingRepositoryInterface::class => MeetingRepository::class,
     ];
 }

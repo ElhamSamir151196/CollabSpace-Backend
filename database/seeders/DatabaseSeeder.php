@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AttendanceStatus;
 use App\Enums\ConversationType;
+use App\Enums\MeetingNoteType;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
@@ -33,7 +35,74 @@ class DatabaseSeeder extends Seeder
             $this->seedDemoProjects();
             $this->seedDemoTasks();
             $this->seedDemoChats();
+            $this->seedDemoMeetings();
         }
+    }
+
+    /**
+     * The meetings from the Figma calendar on the Alpha project, plus the
+     * "Design Review" transcript and notes.
+     */
+    private function seedDemoMeetings(): void
+    {
+        $project = Project::query()->where('slug', 'alpha')->first();
+        $pm = User::query()->where('email', 'pm@collabspace.test')->first();
+
+        if ($project === null || $pm === null || $project->meetings()->exists()) {
+            return;
+        }
+
+        $members = User::query()->where('email', 'like', 'member%@collabspace.test')->orderBy('email')->get();
+        $monday = now()->startOfWeek();
+
+        $schedule = [
+            ['Design Review', 0, '10:00', 30],
+            ['API Design Discussion', 1, '12:00', 30],
+            ['Roadmap Review - Q1', 2, '11:00', 30],
+            ['Monthly Strategy Review', 3, '12:00', 30],
+            ['Design System Sync', 0, '13:00', 30],
+        ];
+
+        foreach ($schedule as [$title, $day, $time, $minutes]) {
+            $start = $monday->copy()->addDays($day)->setTimeFromTimeString($time);
+
+            $meeting = $project->meetings()->create([
+                'title' => $title,
+                'description' => 'The goal of this meeting is to align on the next steps.',
+                'start_at' => $start,
+                'end_at' => $start->copy()->addMinutes($minutes),
+                'meeting_link' => 'https://meet.google.com/abc-defg-hij',
+                'created_by' => $pm->id,
+            ]);
+
+            $meeting->participants()->attach($pm->id, ['attendance_status' => AttendanceStatus::Accepted->value]);
+            $meeting->participants()->attach($members->take(3)->pluck('id')->all());
+        }
+
+        $review = $project->meetings()->where('title', 'Design Review')->firstOrFail();
+
+        $lines = [
+            [0, 1, 'Good morning everyone. Thanks for joining on time. Today we will review the latest design updates.'],
+            [1, 40, 'I went through the new homepage design, and overall it looks cleaner, but there are still some usability issues.'],
+            [2, 83, 'I agree. The layout is better, but the call-to-action is not very clear for first-time users.'],
+            [0, 121, 'From a UX perspective, the sign-up flow also feels a bit long.'],
+        ];
+
+        foreach ($lines as $position => [$speakerIndex, $offset, $content]) {
+            $speaker = $speakerIndex === 0 ? $pm : $members[$speakerIndex - 1];
+
+            $review->transcripts()->create([
+                'speaker_id' => $speaker->id,
+                'speaker_name' => $speaker->name,
+                'offset_seconds' => $offset,
+                'content' => $content,
+                'position' => $position,
+                'created_by' => $pm->id,
+            ]);
+        }
+
+        $review->notes()->create(['user_id' => $pm->id, 'type' => MeetingNoteType::Note, 'body' => 'Update the wireframes based on the feedback.']);
+        $review->notes()->create(['user_id' => $members[0]->id, 'type' => MeetingNoteType::Comment, 'body' => 'Great session!']);
     }
 
     /**
