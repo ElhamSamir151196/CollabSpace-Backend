@@ -47,9 +47,10 @@ class AttachmentResource extends JsonResource
             'uploaded_by' => new UserSummaryResource($this->whenLoaded('uploader')),
             'download_url' => $links->download($this->resource),
             'preview_url' => $links->preview($this->resource),
-            'can' => [
+            // Chat files are removed with their message, so no per-file permission there.
+            'can' => $this->when(! $this->isChatFile() && $user !== null, fn () => [
                 'delete' => (bool) $user?->can('delete', $this->resource),
-            ],
+            ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

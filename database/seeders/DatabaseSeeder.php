@@ -2,14 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ConversationType;
 use App\Enums\Priority;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
 use App\Enums\UserRole;
+use App\Models\Conversation;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\Chat\ProjectChannels;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -29,7 +32,64 @@ class DatabaseSeeder extends Seeder
             $this->seedDemoTeams();
             $this->seedDemoProjects();
             $this->seedDemoTasks();
+            $this->seedDemoChats();
         }
+    }
+
+    /**
+     * Channels for the demo projects, a few channel messages and the
+     * direct chat from the Figma "Chats" screen.
+     */
+    private function seedDemoChats(): void
+    {
+        $channels = app(ProjectChannels::class);
+        Project::query()->each(fn (Project $project) => $channels->ensureFor($project));
+
+        $pm = User::query()->where('email', 'pm@collabspace.test')->first();
+        $member = User::query()->where('email', 'member1@collabspace.test')->first();
+        $public = Conversation::query()
+            ->whereHas('project', fn ($query) => $query->where('slug', 'alpha'))
+            ->where('type', ConversationType::Project->value)
+            ->first();
+
+        if ($pm === null || $member === null || $public === null) {
+            return;
+        }
+
+        $this->seedMessages($public, [
+            [$member, 'Yes, we can do this and edit screen'],
+            [$pm, 'You should do it early'],
+            [$member, 'I edit it and now you can see it'],
+        ]);
+
+        $direct = Conversation::query()->firstOrCreate(
+            ['direct_key' => Conversation::directKey($pm->id, $member->id)],
+            ['type' => ConversationType::Direct, 'created_by' => $pm->id],
+        );
+        $direct->participants()->syncWithoutDetaching([$pm->id, $member->id]);
+
+        $this->seedMessages($direct, [
+            [$member, 'Yes, we can do this and edit screen'],
+            [$pm, 'Ok, I wait you'],
+        ]);
+    }
+
+    /**
+     * Adds the messages only if the conversation is still empty (safe to re-run).
+     *
+     * @param  list<array{0: User, 1: string}>  $messages
+     */
+    private function seedMessages(Conversation $conversation, array $messages): void
+    {
+        if ($conversation->messages()->exists()) {
+            return;
+        }
+
+        foreach ($messages as [$author, $body]) {
+            $conversation->messages()->create(['user_id' => $author->id, 'body' => $body]);
+        }
+
+        $conversation->update(['last_message_at' => now()]);
     }
 
     /**

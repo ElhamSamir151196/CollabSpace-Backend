@@ -17,7 +17,7 @@ The frontend is a separate React app; this repository is the API only.
 | 3 | Projects (teams, guests, members, visibility) | Done |
 | 4 | Tasks & Kanban board (drag & drop, progress, review flow) | Done |
 | 5 | Files (project / task uploads, signed downloads) | Done |
-| 6 | Real-time chat (direct + project / team channels) | Planned |
+| 6 | Real-time chat (direct + project / team channels, Reverb) | Done |
 | 7 | Meetings (calendar, transcripts, notes, AI summary) | Planned |
 | 8 | Notifications & global search | Planned |
 | 9 | Dashboard, reports & PDF export | Planned |
@@ -34,6 +34,7 @@ The frontend is a separate React app; this repository is the API only.
 | Database | MySQL 8 (SQLite in-memory for tests) |
 | API authentication | Laravel Sanctum (Bearer tokens) |
 | Google sign-in | Laravel Socialite |
+| Real-time (WebSockets) | Laravel Reverb |
 | Roles & permissions | spatie/laravel-permission |
 | Audit log | spatie/laravel-activitylog |
 | Tests | Pest |
@@ -69,6 +70,21 @@ php artisan serve
 
 Check that the API is up: `GET http://localhost:8000/api/v1/health`.
 
+### Real-time (chat)
+
+Run these next to `php artisan serve`, each in its own terminal:
+
+```bash
+php artisan reverb:start   # WebSocket server (default port 8080)
+php artisan queue:work     # sends the broadcast events
+```
+
+Projects created before the chat module get their channels with:
+
+```bash
+php artisan chat:sync-channels
+```
+
 ### Environment variables
 
 | Variable | Purpose |
@@ -79,6 +95,8 @@ Check that the API is up: `GET http://localhost:8000/api/v1/health`.
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin account created by `db:seed` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google sign-in |
 | `FILES_DISK`, `FILES_MAX_KB` | Disk and max size (KB) for uploaded files |
+| `BROADCAST_CONNECTION` | `reverb` to send real-time events (`log` / `null` to disable) |
+| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` | Reverb server (created by `php artisan reverb:install`) |
 
 ### Demo data (local environment only)
 
@@ -91,7 +109,8 @@ Check that the API is up: `GET http://localhost:8000/api/v1/health`.
 | `member1@collabspace.test` … `member5@collabspace.test` | Team Members |
 
 Plus the teams *UI/UX, Frontend, Backend, Marketing*, the projects *Alpha* and *SepetGo*,
-and the Kanban cards from the design on *Alpha*. The seeder is safe to run more than once.
+the Kanban cards from the design on *Alpha*, the project / team chat channels, a few
+channel messages and a direct chat. The seeder is safe to run more than once.
 
 ---
 
@@ -131,9 +150,11 @@ Route (v1) → Middleware → FormRequest → Controller → DTO → Action
 ```
 app/
 ├── Actions/            One class per use case, grouped by module
+├── Console/Commands/   chat:sync-channels
 ├── DTOs/
 ├── Enums/
-├── Events/
+├── Events/             Domain events + Chat/ broadcast events
+├── Listeners/          e.g. CreateProjectChannels
 ├── Exceptions/         ApiExceptionRenderer, BusinessException
 ├── Filters/            QueryFilter + one filter per model
 ├── Http/
@@ -151,7 +172,8 @@ app/
 └── Traits/             Filterable, HasAttachments
 routes/
 ├── api.php             requires the feature files below
-└── api/v1/             health, auth, profile, users, teams, projects, tasks, files, admin/users
+├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, admin/users
+└── channels.php        real-time channel authorization
 ```
 
 ---
@@ -281,6 +303,49 @@ extensions only). Files are stored under random names on a **private** disk and 
 only through signed links that expire after 30 minutes. Images and PDFs get a
 `preview_url` (inline); everything else is always downloaded. Projects and tasks can
 also be created with `files[]` in the same request.
+</details>
+
+<details>
+<summary><b>Chat</b> — <code>/conversations</code>, <code>/messages</code></summary>
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/conversations` | Chats list, newest first; `type=direct` (Inbox) \| `project` \| `team`, `project_id` |
+| GET | `/conversations/unread-count` | Navigation badge |
+| POST | `/conversations/direct` | `{ user_id }` — opens (or returns) the 1:1 chat |
+| GET | `/conversations/{conversation}` | Includes `unread_count`; direct chats also `read_receipts` |
+| GET / POST | `/conversations/{conversation}/messages` | Timeline (cursor pagination, newest first); send `{ body?, parent_id?, mention_ids[]?, files[]? }` |
+| POST | `/conversations/{conversation}/read` | `{ message_id? }` — read receipt |
+| PATCH / DELETE | `/messages/{message}` | Edit: author; delete: author, or in channels the project manager / admin |
+| GET | `/messages/{message}/replies` | Thread replies (one level deep) |
+
+Who can open a chat:
+
+| Type | Members |
+|---|---|
+| Direct | Its two people only (admins can't read other people's direct chats) |
+| Project ("Public Channel") | Everyone in the project, and admins |
+| Team ("&lt;Team&gt; Team Channel") | Members of that team while it is assigned to the project, the project manager, and admins |
+
+Project channels are created automatically with the project and whenever a team is assigned.
+</details>
+
+<details>
+<summary><b>Real-time</b> — Laravel Reverb</summary>
+
+The React app connects with Laravel Echo (Pusher protocol) and authorizes private channels
+with `POST /api/broadcasting/auth` and the same `Authorization: Bearer <token>` header.
+
+| Channel | Events | Payload |
+|---|---|---|
+| `private-conversation.{id}` | `.message.sent`, `.message.updated` | `{ message }` |
+| | `.message.deleted` | `{ id, conversation_id, parent_id }` |
+| | `.conversation.read` | `{ conversation_id, user_id, last_read_message_id }` |
+| `private-App.Models.User.{id}` | `.message.sent` (direct chats) | `{ message }` — keeps the Inbox and badge up to date |
+| `presence-online` | join / leave | `{ id, name, avatar_url }` — online indicators |
+
+Events are not sent back to the sender's own socket (send the `X-Socket-ID` header from Echo).
+`users.last_seen_at` is updated (at most once a minute) on authenticated API calls.
 </details>
 
 ---

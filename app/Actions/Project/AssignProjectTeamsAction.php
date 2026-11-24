@@ -2,6 +2,7 @@
 
 namespace App\Actions\Project;
 
+use App\Events\ProjectTeamsAssigned;
 use App\Interfaces\Repositories\ProjectRepositoryInterface;
 use App\Models\Project;
 
@@ -21,5 +22,7 @@ class AssignProjectTeamsAction
         activity('projects')->performedOn($project)->event('teams_assigned')
             ->withProperties(['team_ids' => $teamIds])
             ->log('Teams assigned');
+
+        ProjectTeamsAssigned::dispatch($project, $teamIds);
     }
 }

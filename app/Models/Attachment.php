@@ -31,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property int $size
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Project|Task|Model $attachable
+ * @property-read Project|Task|Message|Model $attachable
  * @property-read Project|null $project
  * @property-read User|null $uploader
  */
@@ -102,14 +102,20 @@ class Attachment extends Model
         return FileType::fromExtension($this->extension);
     }
 
+    public function isChatFile(): bool
+    {
+        return $this->attachable_type === Message::class;
+    }
+
     /**
-     * "project" or "task" — what the file was attached to.
+     * "project", "task" or "message" — what the file was attached to.
      */
     public function source(): string
     {
         return match ($this->attachable_type) {
             Task::class => 'task',
             Project::class => 'project',
+            Message::class => 'message',
             default => 'other',
         };
     }

@@ -3,11 +3,12 @@
 namespace App\Filters;
 
 use App\Enums\FileType;
+use App\Models\Message;
 use App\Models\Project;
 use App\Models\Task;
 
 /**
- * ?search= ?type=image|document|... ?source=project|task ?uploaded_by= ?sort=-created_at|size ...
+ * ?search= ?type=image|document|... ?source=project|task|message ?uploaded_by= ?sort=-created_at|size ...
  */
 class AttachmentFilter extends QueryFilter
 {
@@ -31,7 +32,11 @@ class AttachmentFilter extends QueryFilter
 
     public function source(string $source): void
     {
-        $this->builder->where('attachable_type', $source === 'task' ? Task::class : Project::class);
+        $this->builder->where('attachable_type', match ($source) {
+            'task' => Task::class,
+            'message' => Message::class,
+            default => Project::class,
+        });
     }
 
     public function uploadedBy(int|string $userId): void

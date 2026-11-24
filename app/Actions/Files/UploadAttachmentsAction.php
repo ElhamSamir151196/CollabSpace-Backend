@@ -4,6 +4,7 @@ namespace App\Actions\Files;
 
 use App\Interfaces\Repositories\AttachmentRepositoryInterface;
 use App\Models\Attachment;
+use App\Models\Message;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -29,10 +30,9 @@ class UploadAttachmentsAction
      * @param  list<UploadedFile>  $files
      * @return Collection<int, Attachment>
      */
-    public function handle(Project|Task $target, array $files, User $uploader): Collection
+    public function handle(Project|Task|Message $target, array $files, User $uploader): Collection
     {
-        $projectId = $target instanceof Project ? $target->id : $target->project_id;
-        $directory = "projects/{$projectId}";
+        [$projectId, $directory] = $this->location($target);
         $stored = [];
 
         try {
@@ -63,5 +63,20 @@ class UploadAttachmentsAction
             ->log('Files uploaded');
 
         return $attachments;
+    }
+
+    /**
+     * project_id to store on the row, and the folder on disk.
+     * Direct chat files belong to no project.
+     *
+     * @return array{0: int|null, 1: string}
+     */
+    private function location(Project|Task|Message $target): array
+    {
+        return match (true) {
+            $target instanceof Project => [$target->id, "projects/{$target->id}"],
+            $target instanceof Task => [$target->project_id, "projects/{$target->project_id}"],
+            default => [$target->conversation->project_id, "conversations/{$target->conversation_id}"],
+        };
     }
 }

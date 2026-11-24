@@ -22,7 +22,7 @@ class IndexAttachmentsRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', Rule::enum(FileType::class)],
-            'source' => ['nullable', Rule::in(['project', 'task'])],
+            'source' => ['nullable', Rule::in(['project', 'task', 'message'])],
             'uploaded_by' => ['nullable', 'integer'],
             'sort' => ['nullable', Rule::in(['created_at', '-created_at', 'original_name', '-original_name', 'size', '-size'])],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],

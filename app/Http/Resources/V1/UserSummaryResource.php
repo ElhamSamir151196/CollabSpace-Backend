@@ -25,6 +25,7 @@ class UserSummaryResource extends JsonResource
             'avatar_url' => $this->avatarUrl(),
             'job_title' => $this->job_title,
             'availability_status' => $this->availability_status?->toArray(),
+            'last_seen_at' => $this->last_seen_at?->toIso8601String(),
         ];
     }
 }
