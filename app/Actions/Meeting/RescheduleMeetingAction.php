@@ -24,6 +24,8 @@ class RescheduleMeetingAction
         $meeting = $this->meetings->update($meeting, [
             'start_at' => $schedule->startAt,
             'end_at' => $schedule->endAt,
+            // The new time gets its own reminder.
+            'reminder_sent_at' => null,
         ]);
 
         MeetingRescheduled::dispatch($meeting, $previousStart, $by);

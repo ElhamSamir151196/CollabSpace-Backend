@@ -25,7 +25,7 @@ class CreateTeamAction
                 'created_by' => $creator->id,
             ]);
 
-            return $this->addMembers->handle($team, $data->members);
+            return $this->addMembers->handle($team, $data->members, $creator);
         });
     }
 }

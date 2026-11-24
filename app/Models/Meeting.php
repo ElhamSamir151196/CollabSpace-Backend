@@ -35,6 +35,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $cover_path
  * @property MeetingStatus $status
  * @property Carbon|null $cancelled_at
+ * @property Carbon|null $reminder_sent_at
  * @property int|null $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -58,6 +59,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
     'cover_path',
     'status',
     'cancelled_at',
+    'reminder_sent_at',
     'created_by',
 ])]
 class Meeting extends Model
@@ -74,6 +76,7 @@ class Meeting extends Model
         'cover_path' => null,
         'status' => 'scheduled',
         'cancelled_at' => null,
+        'reminder_sent_at' => null,
     ];
 
     /**
@@ -85,6 +88,7 @@ class Meeting extends Model
             'start_at' => 'datetime',
             'end_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
             'status' => MeetingStatus::class,
         ];
     }

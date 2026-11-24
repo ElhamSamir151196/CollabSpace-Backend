@@ -3,6 +3,13 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\Search\Providers\FileSearch;
+use App\Services\Search\Providers\MeetingSearch;
+use App\Services\Search\Providers\MessageSearch;
+use App\Services\Search\Providers\ProjectSearch;
+use App\Services\Search\Providers\TaskSearch;
+use App\Services\Search\Providers\TeamSearch;
+use App\Services\Search\Providers\UserSearch;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +26,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Sections of the global search, in the order they are shown.
+        $this->app->tag([
+            ProjectSearch::class,
+            TaskSearch::class,
+            MeetingSearch::class,
+            FileSearch::class,
+            MessageSearch::class,
+            TeamSearch::class,
+            UserSearch::class,
+        ], 'search.providers');
     }
 
     /**

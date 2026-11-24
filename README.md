@@ -19,7 +19,7 @@ The frontend is a separate React app; this repository is the API only.
 | 5 | Files (project / task uploads, signed downloads) | Done |
 | 6 | Real-time chat (direct + project / team channels, Reverb) | Done |
 | 7 | Meetings (calendar, participants, transcript, notes & comments) | Done |
-| 8 | Notifications & global search | Planned |
+| 8 | Notifications (in-app + live, reminders) & global search | Done |
 | 9 | Dashboard, reports & PDF export | Planned |
 | 10 | AI assistant (provider-agnostic, Gemini first) | Planned |
 | 11 | Hardening (audit, rate limits, docs, performance) | Planned |
@@ -76,8 +76,11 @@ Run these next to `php artisan serve`, each in its own terminal:
 
 ```bash
 php artisan reverb:start   # WebSocket server (default port 8080)
-php artisan queue:work     # sends the broadcast events
+php artisan queue:work     # sends broadcast events and notifications
+php artisan schedule:work  # meeting reminders, due-date reminders, cleanups
 ```
+
+On a server, `schedule:work` is replaced by one cron entry: `* * * * * php artisan schedule:run`.
 
 Projects created before the chat module get their channels with:
 
@@ -151,11 +154,12 @@ Route (v1) → Middleware → FormRequest → Controller → DTO → Action
 ```
 app/
 ├── Actions/            One class per use case, grouped by module
-├── Console/Commands/   chat:sync-channels
+├── Console/Commands/   chat:sync-channels, meetings:send-reminders, tasks:send-due-reminders, notifications:prune
 ├── DTOs/
 ├── Enums/
 ├── Events/             Domain events + Chat/ broadcast events
-├── Listeners/          e.g. CreateProjectChannels
+├── Listeners/          CreateProjectChannels, Notifications/* (events -> notifications)
+├── Notifications/      AppNotification + one class per notification kind
 ├── Exceptions/         ApiExceptionRenderer, BusinessException
 ├── Filters/            QueryFilter + one filter per model
 ├── Http/
@@ -168,12 +172,12 @@ app/
 ├── Policies/
 ├── Repositories/Eloquent/
 ├── Rules/
-├── Services/
+├── Services/           incl. Search/ (GlobalSearch + one provider per section)
 ├── Support/            ApiResponse
 └── Traits/             Filterable, HasAttachments
 routes/
 ├── api.php             requires the feature files below
-├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, admin/users
+├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, notifications, search, admin/users
 └── channels.php        real-time channel authorization
 ```
 
@@ -358,6 +362,52 @@ Project channels are created automatically with the project and whenever a team 
 Each meeting has a computed `state`: `upcoming`, `live`, `ended` or `cancelled`.
 The video call happens outside the app (`meeting_link`); clicking the cover opens it.
 The AI summary is part of the AI module (phase 10).
+</details>
+
+<details>
+<summary><b>Notifications</b> — <code>/notifications</code></summary>
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/notifications` | Newest first; `unread=1`, `kind=`; `meta.unread_count` |
+| GET | `/notifications/unread-count` | The bell badge |
+| PATCH | `/notifications/{id}/read` | |
+| PATCH | `/notifications/read-all` | |
+| DELETE | `/notifications/{id}` | |
+
+Every notification is saved and pushed live on `private-App.Models.User.{id}` with the same shape:
+`{ id, kind, title, message, target: { type, id, ... }, actor, read_at, created_at }`.
+Nobody is notified about their own action, and deactivated users get nothing.
+
+| Kind | Sent to | When |
+|---|---|---|
+| `added_to_project` | Manager, team members, guests | Project created; team or guest added later |
+| `added_to_team` | New members | Added to a team |
+| `task_assigned` | New assignees | Task created / assignees changed |
+| `task_status_changed` | Assignees + reviewer | Card moved to another column |
+| `task_due_soon` | Assignees | Day before the due date (09:00, scheduled) |
+| `mentioned` | Mentioned users | `mention_ids` in a chat message |
+| `meeting_invited` | Invited participants | Meeting created / people invited |
+| `meeting_rescheduled`, `meeting_cancelled` | Participants who did not decline | Reschedule / cancel |
+| `meeting_reminder` | Participants who did not decline | 15 minutes before the start (scheduled) |
+
+Read notifications older than 30 days are deleted daily.
+</details>
+
+<details>
+<summary><b>Global search</b> — <code>/search</code></summary>
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/search?q=` | Grouped results: `projects, tasks, meetings, files, messages, teams, people`; `types=projects,tasks`, `limit` (per section), `save=0` while typing |
+| GET | `/search/history` | "Recent Searches" (last 10) |
+| DELETE | `/search/history/{id}` | Remove one |
+| DELETE | `/search/history` | Clear all |
+
+Each result: `{ type, id, title, subtitle, meta }` (meta carries what is needed to open it,
+e.g. `slug`, `project_slug`, `conversation_id`). Every section only returns what the user
+is allowed to see. New sections are added by writing a `SearchProvider` class and
+registering it in `AppServiceProvider`.
 </details>
 
 <details>

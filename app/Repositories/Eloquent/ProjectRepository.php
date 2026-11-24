@@ -40,9 +40,9 @@ class ProjectRepository extends BaseRepository implements ProjectRepositoryInter
         return $this->query()->withTrashed()->where('slug', $slug)->exists();
     }
 
-    public function attachTeams(Project $project, array $teamIds): void
+    public function attachTeams(Project $project, array $teamIds): array
     {
-        $project->teams()->syncWithoutDetaching($teamIds);
+        return array_map('intval', $project->teams()->syncWithoutDetaching($teamIds)['attached']);
     }
 
     public function detachTeam(Project $project, Team $team): void
@@ -50,11 +50,13 @@ class ProjectRepository extends BaseRepository implements ProjectRepositoryInter
         $project->teams()->detach($team->id);
     }
 
-    public function attachGuests(Project $project, array $userIds, User $addedBy): void
+    public function attachGuests(Project $project, array $userIds, User $addedBy): array
     {
-        $project->guests()->syncWithoutDetaching(
+        $changes = $project->guests()->syncWithoutDetaching(
             array_fill_keys($userIds, ['added_by' => $addedBy->id]),
         );
+
+        return array_map('intval', $changes['attached']);
     }
 
     public function detachGuest(Project $project, User $guest): void

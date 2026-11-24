@@ -2,6 +2,7 @@
 
 namespace App\Filters;
 
+use App\Support\Like;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -92,18 +93,7 @@ abstract class QueryFilter
      */
     protected function whereLike(array $columns, string $term): void
     {
-        $escaped = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], trim($term)).'%';
-
-        $this->builder->where(function (Builder $query) use ($columns, $escaped) {
-            $grammar = $query->getQuery()->getGrammar();
-
-            foreach ($columns as $column) {
-                $query->orWhereRaw(
-                    $grammar->wrap($query->qualifyColumn($column))." LIKE ? ESCAPE '!'",
-                    [$escaped],
-                );
-            }
-        });
+        Like::any($this->builder, $columns, $term);
     }
 
     private function applySort(): void

@@ -5,6 +5,7 @@ namespace App\Actions\Project;
 use App\Events\ProjectTeamsAssigned;
 use App\Interfaces\Repositories\ProjectRepositoryInterface;
 use App\Models\Project;
+use App\Models\User;
 
 class AssignProjectTeamsAction
 {
@@ -15,14 +16,18 @@ class AssignProjectTeamsAction
      *
      * @param  list<int>  $teamIds
      */
-    public function handle(Project $project, array $teamIds): void
+    public function handle(Project $project, array $teamIds, ?User $by = null): void
     {
-        $this->projects->attachTeams($project, $teamIds);
+        $attached = $this->projects->attachTeams($project, $teamIds);
+
+        if ($attached === []) {
+            return;
+        }
 
         activity('projects')->performedOn($project)->event('teams_assigned')
-            ->withProperties(['team_ids' => $teamIds])
+            ->withProperties(['team_ids' => $attached])
             ->log('Teams assigned');
 
-        ProjectTeamsAssigned::dispatch($project, $teamIds);
+        ProjectTeamsAssigned::dispatch($project, $attached, $by);
     }
 }

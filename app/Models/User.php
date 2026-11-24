@@ -132,6 +132,16 @@ class User extends Authenticatable
         return $this->hasMany(Project::class, 'manager_id');
     }
 
+    /**
+     * Most recent first.
+     *
+     * @return HasMany<SearchHistory, $this>
+     */
+    public function searchHistories(): HasMany
+    {
+        return $this->hasMany(SearchHistory::class)->latest('updated_at')->latest('id');
+    }
+
     public function hasPassword(): bool
     {
         return $this->password !== null;

@@ -24,8 +24,9 @@ interface TeamRepositoryInterface extends BaseRepositoryInterface
      * Adds new members or updates the position/leader flag of existing ones.
      *
      * @param  list<TeamMemberData>  $members
+     * @return list<int> ids of the users that were not in the team before
      */
-    public function upsertMembers(Team $team, array $members): void;
+    public function upsertMembers(Team $team, array $members): array;
 
     /**
      * @param  array<string, mixed>  $attributes  position / is_leader

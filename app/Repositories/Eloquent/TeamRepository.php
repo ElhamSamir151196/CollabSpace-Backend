@@ -27,7 +27,7 @@ class TeamRepository extends BaseRepository implements TeamRepositoryInterface
         return $query->paginate(max(1, min($perPage, static::MAX_PER_PAGE)));
     }
 
-    public function upsertMembers(Team $team, array $members): void
+    public function upsertMembers(Team $team, array $members): array
     {
         $rows = [];
 
@@ -38,7 +38,7 @@ class TeamRepository extends BaseRepository implements TeamRepositoryInterface
             ];
         }
 
-        $team->members()->syncWithoutDetaching($rows);
+        return array_map('intval', $team->members()->syncWithoutDetaching($rows)['attached']);
     }
 
     public function updateMember(Team $team, User $member, array $attributes): void

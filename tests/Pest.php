@@ -52,6 +52,16 @@ function projectWithTeam(?User $manager = null, int $members = 2): array
     return [$project, $team, $users];
 }
 
+/**
+ * The notification kinds a user has received, oldest first.
+ *
+ * @return list<string>
+ */
+function notificationKinds(User $user): array
+{
+    return $user->notifications()->reorder()->orderBy('created_at')->pluck('type')->all();
+}
+
 function actingAsRole(UserRole $role, array $attributes = []): User
 {
     $user = User::factory()->withRole($role)->create($attributes);

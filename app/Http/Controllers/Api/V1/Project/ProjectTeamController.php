@@ -9,7 +9,9 @@ use App\Http\Requests\V1\Project\StoreProjectTeamsRequest;
 use App\Http\Resources\V1\TeamResource;
 use App\Models\Project;
 use App\Models\Team;
+use App\Models\User;
 use App\Support\ApiResponse;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -29,9 +31,9 @@ class ProjectTeamController extends Controller
         return ApiResponse::success(TeamResource::collection($teams));
     }
 
-    public function store(StoreProjectTeamsRequest $request, Project $project, AssignProjectTeamsAction $action): JsonResponse
+    public function store(StoreProjectTeamsRequest $request, Project $project, #[CurrentUser] User $user, AssignProjectTeamsAction $action): JsonResponse
     {
-        $action->handle($project, $request->teamIds());
+        $action->handle($project, $request->teamIds(), $user);
 
         $teams = $project->teams()->with('members')->withCount('members')->get();
 

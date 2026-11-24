@@ -28,15 +28,17 @@ interface ProjectRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * @param  list<int>  $teamIds
+     * @return list<int> ids of the teams that were newly assigned
      */
-    public function attachTeams(Project $project, array $teamIds): void;
+    public function attachTeams(Project $project, array $teamIds): array;
 
     public function detachTeam(Project $project, Team $team): void;
 
     /**
      * @param  list<int>  $userIds
+     * @return list<int> ids of the users that were newly added
      */
-    public function attachGuests(Project $project, array $userIds, User $addedBy): void;
+    public function attachGuests(Project $project, array $userIds, User $addedBy): array;
 
     public function detachGuest(Project $project, User $guest): void;
 

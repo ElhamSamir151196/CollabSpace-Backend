@@ -34,6 +34,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property int|null $reviewer_id
  * @property int $position
  * @property Carbon|null $completed_at
+ * @property Carbon|null $due_reminder_sent_at
  * @property int|null $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -58,6 +59,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
     'reviewer_id',
     'position',
     'completed_at',
+    'due_reminder_sent_at',
     'created_by',
 ])]
 class Task extends Model
@@ -78,6 +80,7 @@ class Task extends Model
         'reviewer_id' => null,
         'position' => 0,
         'completed_at' => null,
+        'due_reminder_sent_at' => null,
     ];
 
     /**
@@ -93,6 +96,7 @@ class Task extends Model
             'start_date' => 'date',
             'due_date' => 'date',
             'completed_at' => 'datetime',
+            'due_reminder_sent_at' => 'datetime',
         ];
     }
 

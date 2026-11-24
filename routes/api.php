@@ -25,6 +25,8 @@ Route::prefix('v1')->name('v1.')->middleware('throttle:api')->group(function () 
     require __DIR__.'/api/v1/files.php';
     require __DIR__.'/api/v1/chat.php';
     require __DIR__.'/api/v1/meetings.php';
+    require __DIR__.'/api/v1/notifications.php';
+    require __DIR__.'/api/v1/search.php';
 
     // Admin
     require __DIR__.'/api/v1/admin/users.php';

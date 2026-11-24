@@ -3,8 +3,10 @@
 namespace App\Actions\Team;
 
 use App\DTOs\Team\TeamMemberData;
+use App\Events\TeamMembersAdded;
 use App\Interfaces\Repositories\TeamRepositoryInterface;
 use App\Models\Team;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,21 +21,25 @@ class AddTeamMembersAction
     /**
      * @param  list<TeamMemberData>  $members
      */
-    public function handle(Team $team, array $members): Team
+    public function handle(Team $team, array $members, ?User $by = null): Team
     {
         if ($members === []) {
             return $team;
         }
 
-        DB::transaction(function () use ($team, $members): void {
+        $added = DB::transaction(function () use ($team, $members): array {
             $newLeader = collect($members)->first(fn (TeamMemberData $member) => $member->isLeader);
 
             if ($newLeader !== null) {
                 $this->teams->clearLeaders($team, keepUserId: $newLeader->userId);
             }
 
-            $this->teams->upsertMembers($team, $members);
+            return $this->teams->upsertMembers($team, $members);
         });
+
+        if ($added !== []) {
+            TeamMembersAdded::dispatch($team, $added, $by);
+        }
 
         return $team;
     }

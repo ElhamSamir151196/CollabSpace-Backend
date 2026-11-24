@@ -13,6 +13,7 @@ use App\Http\Resources\V1\TeamMemberResource;
 use App\Models\Team;
 use App\Models\User;
 use App\Support\ApiResponse;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -30,9 +31,9 @@ class TeamMemberController extends Controller
         return ApiResponse::success(TeamMemberResource::collection($team->members()->get()));
     }
 
-    public function store(StoreTeamMembersRequest $request, Team $team, AddTeamMembersAction $action): JsonResponse
+    public function store(StoreTeamMembersRequest $request, Team $team, #[CurrentUser] User $user, AddTeamMembersAction $action): JsonResponse
     {
-        $action->handle($team, $request->members());
+        $action->handle($team, $request->members(), $user);
 
         return ApiResponse::success(
             TeamMemberResource::collection($team->members()->get()),

@@ -30,6 +30,11 @@ class UpdateTaskAction
         $newlyAssigned = DB::transaction(function () use ($task, $data, $from, $to): array {
             $attributes = [...$data->attributes, ...$this->statusRules->attributesFor($from, $to)];
 
+            // A new due date gets its own "due tomorrow" reminder.
+            if (array_key_exists('due_date', $attributes)) {
+                $attributes['due_reminder_sent_at'] = null;
+            }
+
             if ($attributes !== []) {
                 $this->tasks->update($task, $attributes);
             }
