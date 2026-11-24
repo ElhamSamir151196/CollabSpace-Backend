@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Interfaces\Reports\PdfRenderer;
 use App\Models\User;
 use App\Policies\ReportPolicy;
+use App\Services\Reports\MpdfRenderer;
 use App\Services\Search\Providers\FileSearch;
 use App\Services\Search\Providers\MeetingSearch;
 use App\Services\Search\Providers\MessageSearch;
@@ -28,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(PdfRenderer::class, MpdfRenderer::class);
+
         // Sections of the global search, in the order they are shown.
         $this->app->tag([
             ProjectSearch::class,

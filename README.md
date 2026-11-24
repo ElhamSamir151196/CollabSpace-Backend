@@ -20,7 +20,7 @@ The frontend is a separate React app; this repository is the API only.
 | 6 | Real-time chat (direct + project / team channels, Reverb) | Done |
 | 7 | Meetings (calendar, participants, transcript, notes & comments) | Done |
 | 8 | Notifications (in-app + live, reminders) & global search | Done |
-| 9 | Dashboard & reports (PDF export next) | In progress |
+| 9 | Dashboard, reports & PDF export | Done |
 | 10 | AI assistant (provider-agnostic, Gemini first) | Planned |
 | 11 | Hardening (audit, rate limits, docs, performance) | Planned |
 
@@ -37,6 +37,7 @@ The frontend is a separate React app; this repository is the API only.
 | Real-time (WebSockets) | Laravel Reverb |
 | Roles & permissions | spatie/laravel-permission |
 | Audit log | spatie/laravel-activitylog |
+| PDF reports | mPDF (Arabic / RTL support) |
 | Tests | Pest |
 | Code quality | Laravel Pint, Larastan (level 6) |
 
@@ -99,6 +100,7 @@ php artisan chat:sync-channels
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin account created by `db:seed` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google sign-in |
 | `FILES_DISK`, `FILES_MAX_KB` | Disk and max size (KB) for uploaded files |
+| `REPORTS_DISK` | Disk for exported PDF reports (default `local`, private) |
 | `BROADCAST_CONNECTION` | `reverb` to send real-time events (`log` / `null` to disable) |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` | Reverb server (created by `php artisan reverb:install`) |
 
@@ -451,6 +453,19 @@ Definitions:
 - **Team activity rate** — members of the teams in scope who completed at least one task in the period.
 - **Projects progress** — at the end of each month, completed tasks / tasks created so far.
 - **Productivity score** — 60% completion rate + 30% on-time rate + 10% meeting attendance.
+
+**PDF export** ("Submit a detailed report"):
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| POST | `/reports/exports` | `{ type: overview \| project \| task \| team \| user, note?, from?, to?, project_id?, user_id? }` → returns the export with `download_url` |
+| GET | `/reports/exports` | My exported reports (history) |
+| DELETE | `/reports/exports/{id}` | Deletes the record and the file |
+| GET | `/reports/exports/{id}/download` | Signed link (30 minutes, no token needed) |
+
+The same access rules as the reports apply. PDFs are rendered from Blade templates in
+`resources/views/reports/pdf/` with mPDF (Arabic notes are shaped and written right-to-left)
+and stored on the private disk. The PDF engine sits behind `App\Interfaces\Reports\PdfRenderer`.
 </details>
 
 <details>

@@ -34,6 +34,13 @@ return [
         'link_ttl_minutes' => 30,
     ],
 
+    // Exported PDF reports: private disk, downloaded through signed links.
+    'reports' => [
+        'disk' => env('REPORTS_DISK', 'local'),
+        'directory' => 'reports',
+        'link_ttl_minutes' => 30,
+    ],
+
     // Meeting cover images are public (like avatars), under random names.
     'meetings' => [
         'cover_disk' => 'public',
