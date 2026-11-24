@@ -7,6 +7,7 @@ use App\Interfaces\Repositories\ConversationRepositoryInterface;
 use App\Interfaces\Repositories\MeetingRepositoryInterface;
 use App\Interfaces\Repositories\MessageRepositoryInterface;
 use App\Interfaces\Repositories\ProjectRepositoryInterface;
+use App\Interfaces\Repositories\ReportRepositoryInterface;
 use App\Interfaces\Repositories\TaskRepositoryInterface;
 use App\Interfaces\Repositories\TeamRepositoryInterface;
 use App\Interfaces\Repositories\UserRepositoryInterface;
@@ -15,6 +16,7 @@ use App\Repositories\Eloquent\ConversationRepository;
 use App\Repositories\Eloquent\MeetingRepository;
 use App\Repositories\Eloquent\MessageRepository;
 use App\Repositories\Eloquent\ProjectRepository;
+use App\Repositories\Eloquent\ReportRepository;
 use App\Repositories\Eloquent\TaskRepository;
 use App\Repositories\Eloquent\TeamRepository;
 use App\Repositories\Eloquent\UserRepository;
@@ -41,5 +43,6 @@ class RepositoryServiceProvider extends ServiceProvider
         ConversationRepositoryInterface::class => ConversationRepository::class,
         MessageRepositoryInterface::class => MessageRepository::class,
         MeetingRepositoryInterface::class => MeetingRepository::class,
+        ReportRepositoryInterface::class => ReportRepository::class,
     ];
 }

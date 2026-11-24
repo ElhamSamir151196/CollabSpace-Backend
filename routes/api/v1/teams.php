@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Team\ShowTeamWorkloadController;
 use App\Http\Controllers\Api\V1\Team\TeamController;
 use App\Http\Controllers\Api\V1\Team\TeamMemberController;
 use Illuminate\Support\Facades\Route;
@@ -21,4 +22,6 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::apiResource('teams.members', TeamMemberController::class)
         ->except('show')
         ->scoped();
+
+    Route::get('teams/{team}/workload', ShowTeamWorkloadController::class)->name('teams.workload');
 });

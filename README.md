@@ -20,7 +20,7 @@ The frontend is a separate React app; this repository is the API only.
 | 6 | Real-time chat (direct + project / team channels, Reverb) | Done |
 | 7 | Meetings (calendar, participants, transcript, notes & comments) | Done |
 | 8 | Notifications (in-app + live, reminders) & global search | Done |
-| 9 | Dashboard, reports & PDF export | Planned |
+| 9 | Dashboard & reports (PDF export next) | In progress |
 | 10 | AI assistant (provider-agnostic, Gemini first) | Planned |
 | 11 | Hardening (audit, rate limits, docs, performance) | Planned |
 
@@ -172,12 +172,12 @@ app/
 ├── Policies/
 ├── Repositories/Eloquent/
 ├── Rules/
-├── Services/           incl. Search/ (GlobalSearch + one provider per section)
+├── Services/           incl. Search/ (GlobalSearch + providers), Reports/ (Dashboard + Report services)
 ├── Support/            ApiResponse
 └── Traits/             Filterable, HasAttachments
 routes/
 ├── api.php             requires the feature files below
-├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, notifications, search, admin/users
+├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, notifications, search, dashboard, reports, admin/users
 └── channels.php        real-time channel authorization
 ```
 
@@ -408,6 +408,49 @@ Each result: `{ type, id, title, subtitle, meta }` (meta carries what is needed 
 e.g. `slug`, `project_slug`, `conversation_id`). Every section only returns what the user
 is allowed to see. New sections are added by writing a `SearchProvider` class and
 registering it in `AppServiceProvider`.
+</details>
+
+<details>
+<summary><b>Dashboard</b> — <code>/dashboard</code></summary>
+
+`GET /dashboard?project_id=&year=` returns every widget in one call, limited to the projects
+the user can see:
+
+| Key | Content |
+|---|---|
+| `task_stats` | `pending`, `in_progress`, `in_review`, `completed` → `{ count, total, trend }`; `completion_rate` → `{ value, previous, change }` |
+| `project_overview` | Per month of the year: tasks `created` / `completed` |
+| `active_projects` | In-progress projects with `tasks_total`, `tasks_completed`, `progress` |
+| `my_tasks` | My open tasks, due first |
+| `teams` | My teams (all for admins) with `members_count`, `active_projects_count` |
+| `recent_files`, `upcoming_meetings` | Latest 3 of each |
+
+Trends ("+9% from last month"): for a column, new tasks this month vs last month in that
+column; for completed, tasks completed this month vs last month; the rate change is in points.
+
+`GET /teams/{team}/workload?project_id=` — each member's assigned / completed / open / overdue tasks.
+</details>
+
+<details>
+<summary><b>Reports</b> — <code>/reports</code></summary>
+
+All accept `project_id`, `from`, `to` (default: this month and the 5 before; max 2 years).
+
+| Endpoint | Content |
+|---|---|
+| `GET /reports/overview` | `task_completion_rate`, `project_completion_rate`, `team_activity_rate` (each with the previous period) + `task_time_vs_deadline`, `projects_progress`, `worker_activity` per month |
+| `GET /reports/projects` | Totals (active, delayed, completed ...) + one row per project |
+| `GET /reports/tasks` | By status / priority, overdue, on-time rate, average days to complete |
+| `GET /reports/teams` | Per team: assigned, completed, open, overdue, completion rate, open tasks per member |
+| `GET /reports/users/{user}` | Tasks, files, meeting attendance, productivity score, completed per month |
+
+Who: admins see every project; project managers see the projects they manage; anyone can
+see their own user report (and a project manager can see the members of their projects).
+
+Definitions:
+- **Team activity rate** — members of the teams in scope who completed at least one task in the period.
+- **Projects progress** — at the end of each month, completed tasks / tasks created so far.
+- **Productivity score** — 60% completion rate + 30% on-time rate + 10% meeting attendance.
 </details>
 
 <details>

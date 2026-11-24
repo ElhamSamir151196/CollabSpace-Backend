@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Policies\ReportPolicy;
 use App\Services\Search\Providers\FileSearch;
 use App\Services\Search\Providers\MeetingSearch;
 use App\Services\Search\Providers\MessageSearch;
@@ -15,6 +16,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -48,6 +50,16 @@ class AppServiceProvider extends ServiceProvider
         $this->configurePasswords();
         $this->configurePasswordResetUrl();
         $this->configureRateLimiting();
+        $this->configureGates();
+    }
+
+    /**
+     * Abilities that are not about a single model.
+     */
+    private function configureGates(): void
+    {
+        Gate::define('viewReports', [ReportPolicy::class, 'viewReports']);
+        Gate::define('viewUserReport', [ReportPolicy::class, 'viewUserReport']);
     }
 
     /**
