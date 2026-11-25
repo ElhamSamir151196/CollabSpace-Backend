@@ -55,6 +55,14 @@ class MeetingPolicy
         return $meeting->isCreatedBy($user) || $user->can(Permission::ProjectsManageAll->value);
     }
 
+    /**
+     * "AI Generate Summary": the organizer or whoever manages the project.
+     */
+    public function generateSummary(User $user, Meeting $meeting): bool
+    {
+        return $this->manageContent($user, $meeting) || $this->manages($user, $meeting->project);
+    }
+
     public function respond(User $user, Meeting $meeting): bool
     {
         return $meeting->hasParticipant($user);

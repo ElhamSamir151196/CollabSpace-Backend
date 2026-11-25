@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -48,6 +49,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property-read Collection<int, User> $participants
  * @property-read Collection<int, MeetingTranscript> $transcripts
  * @property-read Collection<int, MeetingNote> $notes
+ * @property-read MeetingSummary|null $summary
  */
 #[Fillable([
     'project_id',
@@ -136,6 +138,14 @@ class Meeting extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(MeetingNote::class);
+    }
+
+    /**
+     * @return HasOne<MeetingSummary, $this>
+     */
+    public function summary(): HasOne
+    {
+        return $this->hasOne(MeetingSummary::class);
     }
 
     /**

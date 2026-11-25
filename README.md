@@ -21,7 +21,7 @@ The frontend is a separate React app; this repository is the API only.
 | 7 | Meetings (calendar, participants, transcript, notes & comments) | Done |
 | 8 | Notifications (in-app + live, reminders) & global search | Done |
 | 9 | Dashboard, reports & PDF export | Done |
-| 10 | AI assistant (provider-agnostic, Gemini first) | Planned |
+| 10 | AI assistant (provider-agnostic, Gemini first) | Done |
 | 11 | Hardening (audit, rate limits, docs, performance) | Planned |
 
 ---
@@ -38,6 +38,7 @@ The frontend is a separate React app; this repository is the API only.
 | Roles & permissions | spatie/laravel-permission |
 | Audit log | spatie/laravel-activitylog |
 | PDF reports | mPDF (Arabic / RTL support) |
+| AI | Google Gemini (REST), behind a provider interface |
 | Tests | Pest |
 | Code quality | Laravel Pint, Larastan (level 6) |
 
@@ -102,6 +103,8 @@ php artisan chat:sync-channels
 | `FILES_DISK`, `FILES_MAX_KB` | Disk and max size (KB) for uploaded files |
 | `REPORTS_DISK` | Disk for exported PDF reports (default `local`, private) |
 | `BROADCAST_CONNECTION` | `reverb` to send real-time events (`log` / `null` to disable) |
+| `AI_PROVIDER` | `fake` (default, no key needed) or `gemini`; the admin can override it in the app |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini key (never returned by the API) and model (default `gemini-2.5-flash`) |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` | Reverb server (created by `php artisan reverb:install`) |
 
 ### Demo data (local environment only)
@@ -466,6 +469,38 @@ Definitions:
 The same access rules as the reports apply. PDFs are rendered from Blade templates in
 `resources/views/reports/pdf/` with mPDF (Arabic notes are shaped and written right-to-left)
 and stored on the private disk. The PDF engine sits behind `App\Interfaces\Reports\PdfRenderer`.
+</details>
+
+<details>
+<summary><b>AI assistant</b> — <code>/ai</code></summary>
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/ai/status` | `enabled`, `allowed_modules` (show / hide the AI features) |
+| GET | `/ai/conversations` | My private AI chats, newest first, with a preview of the last message |
+| POST | `/ai/conversations` | `{ message? }` — new chat; answers the first message when sent |
+| GET | `/ai/conversations/{id}` | The chat with all its messages |
+| DELETE | `/ai/conversations/{id}` | Delete the chat |
+| POST | `/ai/conversations/{id}/messages` | `{ content }` → `{ question, answer }` |
+| POST | `/ai/ask` | `{ question, project_id? }` — one-shot "Ask AI" (not stored) |
+| GET | `/meetings/{id}/summary` | The meeting's AI summary (`null` until generated) |
+| POST | `/meetings/{id}/summary` | Generate / regenerate: summary, key points, decisions, action items, risks, next steps (organizer or project managers) |
+| GET | `/projects/{slug}/ai-insights?refresh=1` | Summary, `health` (`on_track` / `at_risk` / `off_track`), highlights, risks, recommendations (cached 60 minutes) |
+| GET / PUT | `/admin/ai-settings` | Admin: `{ enabled, provider, model, allowed_modules[] }` |
+
+How it works:
+- Chats are private: only their owner can read or continue them (admins included).
+- The AI only receives the data the user is allowed to see, and only from the modules the
+  admin allowed (`projects, tasks, teams, meetings, reports, files`). File contents are never sent, only names.
+- Workspace data is sent as data, separate from the instructions, and the model is told to
+  ignore any instruction inside it.
+- Providers implement `App\Interfaces\Ai\AiProvider`; `AiManager` picks one from the admin
+  setting or `AI_PROVIDER`. Adding a provider = one class + one entry in `config/ai.php`.
+- `fake` answers instantly without a key (development and tests).
+- When AI is off, a module is blocked or the provider fails, the API returns `503`. A failed
+  chat message is not saved.
+- Every AI call is logged (provider, model, tokens) in the activity log, and limited to
+  20 requests per minute per user (`throttle:ai`).
 </details>
 
 <details>

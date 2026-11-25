@@ -29,6 +29,7 @@ Route::prefix('v1')->name('v1.')->middleware('throttle:api')->group(function () 
     require __DIR__.'/api/v1/search.php';
     require __DIR__.'/api/v1/dashboard.php';
     require __DIR__.'/api/v1/reports.php';
+    require __DIR__.'/api/v1/ai.php';
 
     // Admin
     require __DIR__.'/api/v1/admin/users.php';
