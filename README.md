@@ -22,7 +22,7 @@ The frontend is a separate React app; this repository is the API only.
 | 8 | Notifications (in-app + live, reminders) & global search | Done |
 | 9 | Dashboard, reports & PDF export | Done |
 | 10 | AI assistant (provider-agnostic, Gemini first) | Done |
-| 11 | Hardening (audit, rate limits, docs, performance) | Planned |
+| 11 | Hardening (audit log, rate limits, security headers, docs, performance) | Done |
 
 ---
 
@@ -39,6 +39,7 @@ The frontend is a separate React app; this repository is the API only.
 | Audit log | spatie/laravel-activitylog |
 | PDF reports | mPDF (Arabic / RTL support) |
 | AI | Google Gemini (REST), behind a provider interface |
+| API docs | Scribe (HTML + OpenAPI + Postman) |
 | Tests | Pest |
 | Code quality | Laravel Pint, Larastan (level 6) |
 
@@ -70,7 +71,7 @@ php artisan storage:link
 php artisan serve
 ```
 
-Check that the API is up: `GET http://localhost:8000/api/v1/health`.
+Check that the API is up: `GET http://localhost:8000/api/v1/health` (also checks the database and the cache; `503` when one is down).
 
 ### Real-time (chat)
 
@@ -105,6 +106,9 @@ php artisan chat:sync-channels
 | `BROADCAST_CONNECTION` | `reverb` to send real-time events (`log` / `null` to disable) |
 | `AI_PROVIDER` | `fake` (default, no key needed) or `gemini`; the admin can override it in the app |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini key (never returned by the API) and model (default `gemini-2.5-flash`) |
+| `CORS_ALLOWED_ORIGINS` | Browser origins allowed to call the API, comma separated (default `FRONTEND_URL`) |
+| `RATE_LIMIT_API`, `RATE_LIMIT_AUTH`, `RATE_LIMIT_AI`, `RATE_LIMIT_UPLOADS`, `RATE_LIMIT_EXPORTS` | Requests per minute (defaults 120 / 5 / 20 / 20 / 10) |
+| `SCRIBE_OUTPUT_PATH` | Where `composer docs` writes the API docs (default `../../Docs/api`, outside the repository) |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME` | Reverb server (created by `php artisan reverb:install`) |
 
 ### Demo data (local environment only)
@@ -182,7 +186,7 @@ app/
 └── Traits/             Filterable, HasAttachments
 routes/
 ├── api.php             requires the feature files below
-├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, notifications, search, dashboard, reports, admin/users
+├── api/v1/             health, auth, profile, users, teams, projects, tasks, files, chat, meetings, notifications, search, dashboard, reports, ai, admin/users, admin/activity-log
 └── channels.php        real-time channel authorization
 ```
 
@@ -251,6 +255,13 @@ Public auth endpoints are limited to 5 requests per minute per email + IP.
 | GET / PUT / DELETE | `/admin/users/{user}` | Soft delete |
 | PATCH | `/admin/users/{user}/role` | An admin can't remove their own admin role |
 | PATCH | `/admin/users/{user}/status` | Deactivating logs the user out everywhere |
+| GET | `/admin/activity-log` | Audit log, newest first; filters: `search, log, event, causer_id, subject_type, subject_id, from, to` |
+| GET | `/admin/activity-log/{id}` | One entry with its `properties` (old / new values) |
+
+The activity log records logins (and failed logins), registrations, password changes, role and
+status changes, project / team / task / meeting changes, uploads, deletions, moderated messages
+and every AI call. `subject_type`: `user, team, project, task, meeting, message, file`.
+Entries older than 365 days are removed weekly (`activitylog:clean`).
 </details>
 
 <details>
@@ -523,6 +534,47 @@ Events are not sent back to the sender's own socket (send the `X-Socket-ID` head
 
 ---
 
+## Security & limits
+
+| Protection | Details |
+|---|---|
+| Authentication | Sanctum Bearer tokens with an expiry (24 h, or 30 days with "Remember me"); deactivated users are rejected on every request |
+| Authorization | Policies per model + permissions per role; users only ever see data from their own projects |
+| Rate limits (per minute) | `api` 120 per user, `auth` 5 per email + IP, `ai` 20, `uploads` 20, `exports` 10 — answered with `429` and `Retry-After` |
+| CORS | Only the React app origin(s) (`CORS_ALLOWED_ORIGINS`); no cookies |
+| Security headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, HSTS over HTTPS, `Cache-Control: no-store` on JSON |
+| Request id | Every response has `X-Request-Id` (or keeps a valid one sent by the client); it is added to every log line of that request |
+| Files | Private disk, signed download links that expire, type and size validation |
+| Errors | No stack traces or internal names in responses (`APP_DEBUG=false` in production) |
+| Passwords | Hashed; in production they must contain letters and numbers and not appear in known data leaks |
+
+### Production checklist
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache && php artisan route:cache && php artisan event:cache
+```
+
+- `APP_ENV=production`, `APP_DEBUG=false`, HTTPS only, real `FRONTEND_URL` / `CORS_ALLOWED_ORIGINS`.
+- Keep running (e.g. with Supervisor): `php artisan queue:work`, `php artisan reverb:start`.
+- Cron: `* * * * * php artisan schedule:run`.
+- `AI_PROVIDER=gemini` with `GEMINI_API_KEY` when AI should be live.
+
+---
+
+## API documentation
+
+```bash
+composer docs   # = php artisan docs:generate
+```
+
+Builds HTML docs, an OpenAPI spec (`openapi.yaml`) and a Postman collection with Scribe from
+the routes, FormRequests and Resources, into `../../Docs/api` (outside the repository).
+Endpoints are grouped by feature automatically; no request is sent while generating.
+
+---
+
 ## Testing & code quality
 
 ```bash
@@ -530,6 +582,7 @@ composer test      # Pest feature + unit tests
 composer analyse   # Larastan
 composer lint      # Laravel Pint (fixes style)
 composer check     # all three
+composer docs      # API documentation (see above)
 ```
 
 Tests run on an in-memory SQLite database with roles and permissions seeded.

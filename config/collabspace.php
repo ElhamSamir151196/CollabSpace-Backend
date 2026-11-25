@@ -48,6 +48,15 @@ return [
         'cover_max_kb' => 4096,
     ],
 
+    // Requests per minute (per user, or per IP for guests).
+    'rate_limits' => [
+        'api' => (int) env('RATE_LIMIT_API', 120),     // all API calls
+        'auth' => (int) env('RATE_LIMIT_AUTH', 5),     // login / register / password reset (per email + IP)
+        'ai' => (int) env('RATE_LIMIT_AI', 20),        // calls that reach the AI provider
+        'uploads' => (int) env('RATE_LIMIT_UPLOADS', 20), // file, avatar and cover uploads
+        'exports' => (int) env('RATE_LIMIT_EXPORTS', 10), // PDF report exports
+    ],
+
     // First admin account created by AdminUserSeeder.
     'admin' => [
         'name' => env('ADMIN_NAME', 'System Admin'),

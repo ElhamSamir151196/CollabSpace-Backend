@@ -2,8 +2,10 @@
 
 use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\BusinessException;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrackLastSeen;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
+            AssignRequestId::class,
+            SecurityHeaders::class,
             ForceJsonResponse::class,
         ]);
 

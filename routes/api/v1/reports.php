@@ -29,7 +29,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('teams', TeamsReportController::class)->name('teams');
         Route::get('users/{user}', UserReportController::class)->name('users');
 
-        Route::apiResource('exports', ReportExportController::class)->only(['index', 'store', 'destroy']);
+        Route::apiResource('exports', ReportExportController::class)->only(['index', 'store', 'destroy'])->middlewareFor('store', 'throttle:exports');
     });
 
     Route::get('exports/{export}/download', DownloadReportExportController::class)

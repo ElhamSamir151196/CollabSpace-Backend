@@ -33,4 +33,5 @@ Route::prefix('v1')->name('v1.')->middleware('throttle:api')->group(function () 
 
     // Admin
     require __DIR__.'/api/v1/admin/users.php';
+    require __DIR__.'/api/v1/admin/activity-log.php';
 });

@@ -80,6 +80,7 @@
         ],
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint",
+        "docs": "@php artisan docs:generate",
         "check": [
             "@lint",
             "@analyse",

@@ -18,7 +18,7 @@ it('returns the health check in the standard shape', function () {
         ->assertExactJson([
             'success' => true,
             'message' => null,
-            'data' => ['status' => 'ok', 'version' => 'v1'],
+            'data' => ['status' => 'ok', 'version' => 'v1', 'checks' => ['database' => 'up', 'cache' => 'up']],
         ]);
 });
 

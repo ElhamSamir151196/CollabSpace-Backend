@@ -1,5 +1,8 @@
 <?php
 
+use App\Support\Scribe\RouteMetadata;
+use App\Support\Scribe\SafeFormRequestBodyParameters;
+use App\Support\Scribe\SafeFormRequestQueryParameters;
 use Knuckles\Scribe\Config\AuthIn;
 use Knuckles\Scribe\Config\Defaults;
 use Knuckles\Scribe\Extracting\Strategies;
@@ -11,17 +14,19 @@ use function Knuckles\Scribe\Config\removeStrategies;
 
 return [
     // The HTML <title> for the generated documentation.
-    'title' => config('app.name').' API Documentation',
+    'title' => 'CollabSpace AI API',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
-    'description' => '',
+    'description' => 'REST API for CollabSpace AI: projects, tasks, teams, files, chat, meetings, reports and the AI assistant.',
 
     // Text to place in the "Introduction" section, right after the `description`. Markdown and HTML are supported.
     'intro_text' => <<<'INTRO'
-            This documentation aims to provide all the information you need to work with our API.
+            All endpoints live under `/api/v1` and always answer with the same JSON shape:
+            `{ success, message, data, meta?, errors? }`.
 
-            <aside>As you scroll, you'll see code examples for working with the API in different programming languages in the dark area to the right (or as part of the content on mobile).
-            You can switch the language used with the tabs at the top right (or from the nav menu at the top left on mobile).</aside>
+            Authentication: send `Authorization: Bearer <token>` (from `POST /auth/login` or `POST /auth/google`).
+            Lists are paginated with `page` / `per_page` (max 100). Errors use standard HTTP status codes
+            (401, 403, 404, 422, 429, 503) and every response carries an `X-Request-Id` header.
         INTRO,
 
     // The base URL displayed in the docs.
@@ -33,7 +38,7 @@ return [
         [
             'match' => [
                 // Match only routes whose paths match this pattern (use * as a wildcard to match any characters). Example: 'users/*'.
-                'prefixes' => ['api/*'],
+                'prefixes' => ['api/v1/*'],
 
                 // Match only routes whose domains match this pattern (use * as a wildcard to match any characters). Example: 'api.*'.
                 'domains' => ['*'],
@@ -55,7 +60,7 @@ return [
     // - "static" will generate a static HTMl page in the /public/docs folder,
     // - "laravel" will generate the documentation as a Blade view, so you can add routing and authentication.
     // - "external_static" and "external_laravel" do the same as above, but pass the OpenAPI spec as a URL to an external UI template
-    'type' => 'laravel',
+    'type' => 'static',
 
     // See https://scribe.knuckles.wtf/laravel/reference/config#theme for supported options
     'theme' => 'default',
@@ -63,12 +68,13 @@ return [
     'static' => [
         // HTML documentation, assets and Postman collection will be generated to this folder.
         // Source Markdown will still be in resources/docs.
-        'output_path' => 'public/docs',
+        // Generated outside the repository (Docs/api), so it is never committed.
+        'output_path' => env('SCRIBE_OUTPUT_PATH', '../../Docs/api'),
     ],
 
     'laravel' => [
         // Whether to automatically create a docs route for you to view your generated docs. You can still set up routing manually.
-        'add_routes' => true,
+        'add_routes' => false,
 
         // URL path to use for the docs endpoint (if `add_routes` is true).
         // By default, `/docs` opens the HTML page, `/docs.postman` opens the Postman collection, and `/docs.openapi` the OpenAPI spec.
@@ -105,7 +111,7 @@ return [
     // How is your API authenticated? This information will be used in the displayed docs, generated examples and response calls.
     'auth' => [
         // Set this to true if ANY endpoints in your API use authentication.
-        'enabled' => false,
+        'enabled' => true,
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
@@ -115,7 +121,7 @@ return [
         'in' => AuthIn::BEARER->value,
 
         // The name of the auth parameter (e.g. token, key, apiKey) or header (e.g. Authorization, Api-Key).
-        'name' => 'key',
+        'name' => 'Authorization',
 
         // The value of the parameter to be used by Scribe to authenticate response calls.
         // This will NOT be included in the generated documentation. If empty, Scribe will use a random value.
@@ -123,10 +129,10 @@ return [
 
         // Placeholder your users will see for the auth parameter in the example requests.
         // Set this to null if you want Scribe to use a random value as placeholder instead.
-        'placeholder' => '{YOUR_AUTH_KEY}',
+        'placeholder' => '{YOUR_TOKEN}',
 
         // Any extra authentication-related info for your users. Markdown and HTML are supported.
-        'extra_info' => 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.',
+        'extra_info' => 'Get a token from <code>POST /api/v1/auth/login</code> and send it as <code>Authorization: Bearer {token}</code>.',
     ],
 
     // Example requests for each endpoint will be shown in each of these languages.
@@ -179,7 +185,7 @@ return [
         // You can override this by listing the groups, subgroups and endpoints here in the order you want them.
         // See https://scribe.knuckles.wtf/blog/laravel-v4#easier-sorting and https://scribe.knuckles.wtf/laravel/reference/config#order for details
         // Note: does not work for `external` docs types
-        'order' => [],
+        'order' => ['Health', 'Auth', 'Profile', 'Users', 'Teams', 'Projects', 'Tasks', 'Files', 'Conversations', 'Messages', 'Meetings', 'Notifications', 'Search', 'Dashboard', 'Reports', 'AI'],
     ],
 
     // Custom logo path. This will be used as the value of the src attribute for the <img> tag,
@@ -206,7 +212,8 @@ return [
         // With API resources and transformers, Scribe tries to generate example models to use in your API responses.
         // By default, Scribe will try the model's factory, and if that fails, try fetching the first from the database.
         // You can reorder or remove strategies here.
-        'models_source' => ['factoryCreate', 'factoryMake', 'databaseFirst'],
+        // Only build example models in memory: generating the docs never writes to the database.
+        'models_source' => ['factoryMake'],
     ],
 
     // The strategies Scribe will use to extract information about your routes at each stage.
@@ -215,6 +222,7 @@ return [
     'strategies' => [
         'metadata' => [
             ...Defaults::METADATA_STRATEGIES,
+            RouteMetadata::class,
         ],
         'headers' => [
             ...Defaults::HEADERS_STRATEGIES,
@@ -227,20 +235,18 @@ return [
             ...Defaults::URL_PARAMETERS_STRATEGIES,
         ],
         'queryParameters' => [
-            ...Defaults::QUERY_PARAMETERS_STRATEGIES,
+            SafeFormRequestQueryParameters::class,
+            ...removeStrategies(Defaults::QUERY_PARAMETERS_STRATEGIES, [Strategies\QueryParameters\GetFromFormRequest::class]),
         ],
         'bodyParameters' => [
-            ...Defaults::BODY_PARAMETERS_STRATEGIES,
+            // Same as the default FormRequest strategy, but tolerant of rules that need a route model.
+            SafeFormRequestBodyParameters::class,
+            ...removeStrategies(Defaults::BODY_PARAMETERS_STRATEGIES, [Strategies\BodyParameters\GetFromFormRequest::class]),
         ],
-        'responses' => configureStrategy(
+        // No response calls: the docs are built from the code only (no real requests).
+        'responses' => removeStrategies(
             Defaults::RESPONSES_STRATEGIES,
-            Strategies\Responses\ResponseCalls::withSettings(
-                only: ['GET *'],
-                // Recommended: disable debug mode in response calls to avoid error stack traces in responses
-                config: [
-                    'app.debug' => false,
-                ]
-            )
+            [Strategies\Responses\ResponseCalls::class],
         ),
         'responseFields' => [
             ...Defaults::RESPONSE_FIELDS_STRATEGIES,

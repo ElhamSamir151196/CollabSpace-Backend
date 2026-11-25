@@ -113,19 +113,23 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimiting(): void
     {
+        $limit = fn (string $name): int => (int) config("collabspace.rate_limits.{$name}");
+        $perUser = fn (Request $request): string => (string) ($request->user()?->id ?: $request->ip());
+
         // General API traffic.
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute($limit('api'))->by($perUser($request)));
 
         // Login, register, forgot/reset password — protects against brute force.
-        RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip());
-        });
+        RateLimiter::for('auth', fn (Request $request) => Limit::perMinute($limit('auth'))
+            ->by(strtolower((string) $request->input('email')).'|'.$request->ip()));
 
         // AI calls cost money — limit per user.
-        RateLimiter::for('ai', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
-        });
+        RateLimiter::for('ai', fn (Request $request) => Limit::perMinute($limit('ai'))->by('ai|'.$perUser($request)));
+
+        // Uploads use disk space and bandwidth.
+        RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute($limit('uploads'))->by('uploads|'.$perUser($request)));
+
+        // PDF rendering is CPU heavy.
+        RateLimiter::for('exports', fn (Request $request) => Limit::perMinute($limit('exports'))->by('exports|'.$perUser($request)));
     }
 }

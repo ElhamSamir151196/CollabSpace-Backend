@@ -22,8 +22,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
-    Route::apiResource('projects.files', ProjectFileController::class)->only(['index', 'store']);
-    Route::apiResource('tasks.files', TaskFileController::class)->only(['index', 'store']);
+    Route::apiResource('projects.files', ProjectFileController::class)->only(['index', 'store'])->middlewareFor('store', 'throttle:uploads');
+    Route::apiResource('tasks.files', TaskFileController::class)->only(['index', 'store'])->middlewareFor('store', 'throttle:uploads');
 
     // Before {file}, so "recent" is not read as a file id.
     Route::get('files/recent', RecentFilesController::class)->name('files.recent');

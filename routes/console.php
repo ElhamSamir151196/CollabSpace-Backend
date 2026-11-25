@@ -23,3 +23,6 @@ Schedule::command('tasks:send-due-reminders')->dailyAt('09:00')->withoutOverlapp
 
 // Read notifications older than 30 days.
 Schedule::command('notifications:prune')->daily();
+
+// Activity log entries older than activitylog.delete_records_older_than_days (365).
+Schedule::command('activitylog:clean --force')->weekly();

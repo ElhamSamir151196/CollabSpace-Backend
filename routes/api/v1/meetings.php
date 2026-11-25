@@ -32,7 +32,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::patch('meetings/{meeting}/cancel', CancelMeetingController::class)->name('meetings.cancel');
     Route::patch('meetings/{meeting}/attendance', RespondToMeetingController::class)->name('meetings.attendance');
     Route::post('meetings/{meeting}/join', JoinMeetingController::class)->name('meetings.join');
-    Route::post('meetings/{meeting}/cover', UpdateMeetingCoverController::class)->name('meetings.cover.update');
+    Route::post('meetings/{meeting}/cover', UpdateMeetingCoverController::class)->middleware('throttle:uploads')->name('meetings.cover.update');
     Route::delete('meetings/{meeting}/cover', DeleteMeetingCoverController::class)->name('meetings.cover.destroy');
 
     Route::apiResource('meetings.participants', MeetingParticipantController::class)

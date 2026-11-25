@@ -20,7 +20,7 @@ Route::prefix('profile')->name('profile.')->middleware(['auth:sanctum', 'active'
     Route::get('/', [ProfileController::class, 'show'])->name('show');
     Route::put('/', [ProfileController::class, 'update'])->name('update');
 
-    Route::post('avatar', UpdateAvatarController::class)->name('avatar.update');
+    Route::post('avatar', UpdateAvatarController::class)->middleware('throttle:uploads')->name('avatar.update');
     Route::delete('avatar', DeleteAvatarController::class)->name('avatar.destroy');
     Route::put('password', ChangePasswordController::class)->name('password.update');
     Route::get('files', ListMyFilesController::class)->name('files');
