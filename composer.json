@@ -81,6 +81,10 @@
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint",
         "docs": "@php artisan docs:generate",
+        "docs:serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php -S localhost:8001 -t ../../Docs/api"
+        ],
         "check": [
             "@lint",
             "@analyse",

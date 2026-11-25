@@ -39,7 +39,16 @@ it('sends the key in a header and maps roles and the system prompt', function ()
         && $request->hasHeader('x-goog-api-key', 'test-key')
         && ! str_contains($request->url(), 'test-key')
         && $request['systemInstruction']['parts'][0]['text'] === 'Be helpful.'
-        && array_column($request['contents'], 'role') === ['user', 'model', 'user']);
+        && array_column($request['contents'], 'role') === ['user', 'model', 'user']
+        && ! isset($request['generationConfig']['thinkingConfig']));
+});
+
+it('sends the thinking level when it is set', function () {
+    Http::fake(['gemini.test/*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => 'OK']]]]]])]);
+
+    gemini(['thinking_level' => 'low'])->generate([ChatMessage::user('x')]);
+
+    Http::assertSent(fn (Request $request) => $request['generationConfig']['thinkingConfig'] === ['thinkingLevel' => 'low']);
 });
 
 it('asks for JSON with an upper-case schema and decodes it', function () {

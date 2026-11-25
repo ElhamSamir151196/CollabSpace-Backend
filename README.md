@@ -105,7 +105,7 @@ php artisan chat:sync-channels
 | `REPORTS_DISK` | Disk for exported PDF reports (default `local`, private) |
 | `BROADCAST_CONNECTION` | `reverb` to send real-time events (`log` / `null` to disable) |
 | `AI_PROVIDER` | `fake` (default, no key needed) or `gemini`; the admin can override it in the app |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini key (never returned by the API) and model (default `gemini-2.5-flash`) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini key (never returned by the API) and model (default `gemini-3.5-flash-lite`); `GEMINI_THINKING_LEVEL` (default `low`, fast answers) |
 | `CORS_ALLOWED_ORIGINS` | Browser origins allowed to call the API, comma separated (default `FRONTEND_URL`) |
 | `RATE_LIMIT_API`, `RATE_LIMIT_AUTH`, `RATE_LIMIT_AI`, `RATE_LIMIT_UPLOADS`, `RATE_LIMIT_EXPORTS` | Requests per minute (defaults 120 / 5 / 20 / 20 / 10) |
 | `SCRIBE_OUTPUT_PATH` | Where `composer docs` writes the API docs (default `../../Docs/api`, outside the repository) |

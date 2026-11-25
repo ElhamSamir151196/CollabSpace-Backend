@@ -16,6 +16,11 @@ $origins = array_values(array_filter(array_map(
     explode(',', (string) env('CORS_ALLOWED_ORIGINS', env('FRONTEND_URL', 'http://localhost:5173'))),
 )));
 
+// Locally, the API docs ("composer docs:serve") may call the API with "Try it out".
+if (env('APP_ENV') === 'local') {
+    $origins[] = 'http://localhost:8001';
+}
+
 return [
 
     'paths' => ['api/*'],

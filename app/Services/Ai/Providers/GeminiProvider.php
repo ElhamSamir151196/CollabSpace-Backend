@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 class GeminiProvider implements AiProvider
 {
     /**
-     * @param  array{api_key?: string|null, model?: string, base_url?: string, timeout?: int}  $config
+     * @param  array{api_key?: string|null, model?: string, base_url?: string, timeout?: int, thinking_level?: string|null}  $config
      */
     public function __construct(private readonly array $config) {}
 
@@ -31,7 +31,7 @@ class GeminiProvider implements AiProvider
 
     public function model(): string
     {
-        return (string) ($this->config['model'] ?? 'gemini-2.5-flash');
+        return (string) ($this->config['model'] ?? 'gemini-3.5-flash-lite');
     }
 
     public function generate(array $messages, ?array $jsonSchema = null): AiResponse
@@ -93,6 +93,11 @@ class GeminiProvider implements AiProvider
             'contents' => $contents,
             'generationConfig' => ['temperature' => 0.4],
         ];
+
+        // Gemini 3 models "think" before answering; "low" keeps answers fast (seconds instead of ~40s).
+        if (filled($this->config['thinking_level'] ?? null)) {
+            $payload['generationConfig']['thinkingConfig'] = ['thinkingLevel' => (string) $this->config['thinking_level']];
+        }
 
         if ($system !== '') {
             $payload['systemInstruction'] = ['parts' => [['text' => $system]]];
